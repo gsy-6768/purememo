@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">PureMemo</string>
+    <string name="title_activity_main">PureMemo</string>
+    <string name="package_name">com.purememo.app</string>
+    <string name="custom_url_scheme">com.purememo.app</string>
+</resources>
