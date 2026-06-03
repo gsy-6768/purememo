@@ -363,7 +363,7 @@ export default function HomePage() {
                 )}
                 <div className="flex gap-2">
                   <button
-                    onClick={() => s.today > 0 ? setModePicker({ planId: plan.id }) : setModePicker({ planId: plan.id, limitReached: true, currentLimit: dailyNewLimit })}
+                    onClick={() => s.today > 0 ? setModePicker({ planId: plan.id }) : setModePicker({ planId: plan.id, limitReached: true, currentLimit: todayDone.targetNew })}
                     className="flex-1 bg-primary-600 text-white py-2.5 rounded-lg font-medium text-sm btn-press"
                   >
                     开始学习
