@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { getAllPlans, getAllDailyStats, getWordsByPlan, getSetting, getWeakWords, getDB } from '../db/database.js'
+import { getAllPlans, getAllDailyStats, getWordsByPlan, getSetting, setSetting, getWeakWords, getDB } from '../db/database.js'
 import { useToast } from './Toast.jsx'
 // cet4/cet6 loaded lazily to reduce bundle size
 
