@@ -1388,128 +1388,81 @@ def find_roots(word, root_db):
 
 
 # ============================================================
-# 4. Frequency tier heuristic
+# 4. Frequency tier - importance scoring
 # ============================================================
 
-def get_frequency_tier(word, meaning):
-    """基于词长和常见度分配频次等级"""
+def compute_word_importance(word, meaning):
+    """计算单词重要程度分数 (越低越重要)"""
     w_lower = word.lower()
     length = len(w_lower)
+    score = 0.0
     
-    # Core words: short + very common
-    core_words = {
-        "the", "be", "to", "of", "and", "a", "in", "that", "have", "it",
-        "for", "not", "on", "with", "he", "as", "you", "do", "at", "this",
-        "but", "his", "by", "from", "they", "we", "say", "her", "she", "or",
-        "an", "will", "my", "one", "all", "would", "there", "their", "what",
-        "so", "up", "out", "if", "about", "who", "get", "which", "go", "me",
-        "when", "make", "can", "like", "time", "no", "just", "him", "know",
-        "take", "people", "into", "year", "your", "good", "some", "could",
-        "them", "see", "other", "than", "then", "now", "look", "only", "come",
-        "its", "over", "think", "also", "back", "after", "use", "two", "how",
-        "our", "work", "first", "well", "way", "even", "new", "want", "because",
-        "any", "these", "give", "day", "most", "us", "great", "between",
-        "need", "large", "often", "hand", "high", "place", "small", "under",
-        "long", "right", "still", "house", "world", "last", "school", "never",
-        "city", "tree", "cross", "farm", "hard", "start", "might", "story",
-        "saw", "far", "sea", "draw", "left", "late", "run", "while", "press",
-        "close", "night", "real", "life", "few", "north", "book", "carry",
-        "took", "science", "eat", "room", "friend", "began", "idea", "fish",
-        "mountain", "stop", "once", "base", "hear", "horse", "cut", "sure",
-        "watch", "color", "face", "wood", "main", "enough", "plain", "girl",
-        "usual", "young", "ready", "above", "ever", "red", "list", "though",
-        "feel", "talk", "bird", "soon", "body", "dog", "family", "direct",
-        "pose", "leave", "song", "measure", "door", "product", "black",
-        "short", "number", "class", "wind", "question", "happen", "complete",
-        "ship", "area", "half", "rock", "order", "fire", "south", "problem",
-        "piece", "told", "knew", "pass", "since", "top", "whole", "king",
-        "space", "heard", "best", "hour", "better", "true", "during",
-        "hundred", "remember", "step", "early", "hold", "west", "ground",
-        "interest", "reach", "fast", "verb", "sing", "listen", "six",
-        "table", "travel", "less", "morning", "ten", "simple", "several",
-        "vowel", "toward", "war", "lay", "against", "pattern", "slow",
-        "center", "love", "person", "money", "serve", "appear", "road",
-        "map", "rain", "rule", "govern", "pull", "cold", "notice", "voice",
-        "unit", "power", "town", "fine", "certain", "fly", "fall", "lead",
-        "cry", "dark", "machine", "note", "wait", "plan", "figure", "star",
-        "box", "noun", "field", "rest", "correct", "able", "pound", "done",
-        "beauty", "drive", "stood", "contain", "front", "teach", "week",
-        "final", "gave", "green", "oh", "quick", "develop", "ocean", "warm",
-        "free", "minute", "strong", "special", "mind", "behind", "clear",
-        "tail", "produce", "fact", "street", "inch", "multiply", "nothing",
-        "course", "stay", "wheel", "full", "force", "blue", "object",
-        "decide", "surface", "deep", "moon", "island", "foot", "system",
-        "busy", "test", "record", "boat", "common", "gold", "possible",
-        "plane", "stead", "dry", "wonder", "laugh", "thousand", "ago",
-        "ran", "check", "game", "shape", "equate", "hot", "miss", "brought",
-        "heat", "snow", "tire", "bring", "yes", "distant", "fill", "east",
-        "paint", "language", "among", "grand", "ball", "yet", "wave",
-        "drop", "heart", "am", "present", "heavy", "dance", "engine",
-        "position", "arm", "wide", "sail", "material", "size", "vary",
-        "settle", "speak", "weight", "general", "ice", "matter", "circle",
-        "pair", "include", "divide", "syllable", "felt", "perhaps", "pick",
-        "sudden", "count", "square", "reason", "length", "represent", "art",
-        "subject", "region", "energy", "hunt", "probable", "bed", "brother",
-        "egg", "ride", "cell", "believe", "fraction", "forest", "sit", "race",
-        "window", "store", "summer", "train", "sleep", "prove", "lone",
-        "leg", "exercise", "wall", "catch", "mount", "wish", "sky", "board",
-        "joy", "winter", "sat", "written", "wild", "instrument", "kept",
-        "glass", "grass", "cow", "job", "edge", "sign", "visit", "past",
-        "soft", "fun", "bright", "gas", "weather", "month", "million", "bear",
-        "finish", "happy", "hope", "flower", "clothe", "strange", "gone",
-        "trade", "melody", "trip", "office", "receive", "row", "mouth",
-        "exact", "symbol", "die", "least", "trouble", "shout", "except",
-        "wrote", "seed", "tone", "join", "suggest", "clean", "break", "lady",
-        "yard", "rise", "bad", "blow", "oil", "blood", "touch", "grew",
-        "cent", "mix", "team", "wire", "cost", "lost", "brown", "wear",
-        "garden", "equal", "sent", "choose", "fell", "fit", "flow", "fair",
-        "bank", "collect", "save", "control", "decimal", "gentle", "woman",
-        "captain", "practice", "separate", "difficult", "doctor", "please",
-        "protect", "noon", "whose", "locate", "ring", "character", "insect",
-        "caught", "period", "indicate", "radio", "spoke", "atom", "human",
-        "history", "effect", "electric", "expect", "crop", "modern", "element",
-        "hit", "student", "corner", "party", "supply", "bone", "rail", "imagine",
-        "provide", "agree", "thus", "capital", "won't", "chair", "danger",
-        "fruit", "rich", "thick", "soldier", "process", "operate", "guess",
-        "necessary", "sharp", "wing", "create", "neighbor", "wash", "bat",
-        "rather", "crowd", "corn", "compare", "poem", "string", "bell",
-        "depend", "meat", "rub", "tube", "famous", "dollar", "stream", "fear",
-        "sight", "thin", "triangle", "planet", "hurry", "chief", "colony",
-        "clock", "mine", "tie", "enter", "major", "fresh", "search", "send",
-        "yellow", "gun", "allow", "print", "dead", "spot", "desert", "suit",
-        "current", "lift", "rose", "continue", "block", "chart", "hat", "sell",
-        "success", "company", "subtract", "event", "particular", "deal",
-        "swim", "term", "opposite", "wife", "shoe", "shoulder", "spread",
-        "arrange", "camp", "invent", "cotton", "born", "determine", "quart",
-        "nine", "truck", "noise", "level", "chance", "gather", "shop",
-        "stretch", "throw", "shine", "property", "column", "molecule", "select",
-        "wrong", "gray", "repeat", "require", "broad", "prepare", "salt",
-        "nose", "plural", "anger", "claim", "continent", "oxygen", "sugar",
-        "death", "pretty", "skill", "women", "season", "solution", "magnet",
-        "silver", "thank", "branch", "match", "suffix", "especially", "fig",
-        "afraid", "huge", "sister", "steel", "discuss", "forward", "similar",
-        "guide", "experience", "score", "apple", "bought", "led", "pitch",
-        "coat", "mass", "card", "band", "rope", "slip", "win", "dream",
-        "evening", "condition", "feed", "tool", "total", "basic", "smell",
-        "valley", "nor", "double", "seat", "arrive", "master", "track",
-        "parent", "shore", "division", "sheet", "substance", "favor",
-        "connect", "post", "spend", "chord", "fat", "glad", "original",
-        "share", "station", "dad", "bread", "charge", "proper", "bar",
-        "offer", "segment", "slave", "duck", "instant", "market", "degree",
-        "populate", "chick", "dear", "enemy", "reply", "drink", "occur",
-        "support", "speech", "nature", "range", "steam", "motion", "path",
-        "liquid", "log", "meant", "quotient", "teeth", "shell", "neck",
-    }
+    # 1) 词长：短词更常见
+    if length <= 4: score -= 3.0
+    elif length <= 5: score -= 2.0
+    elif length <= 6: score -= 1.0
+    elif length == 7: score -= 0.5
+    elif length == 8: score += 0.5
+    elif length == 9: score += 1.5
+    elif length == 10: score += 2.5
+    elif length >= 13: score += 4.5
+    elif length >= 11: score += 3.5
     
-    if w_lower in core_words:
-        return "core"
+    # 2) 派生后缀：有派生后缀的词通常更进阶
+    deriv_suffixes = ['tion', 'sion', 'ment', 'ness', 'ity', 'able', 'ible',
+                      'ous', 'ive', 'ful', 'less', 'ize', 'ify', 'ical',
+                      'ward', 'hood', 'ship', 'ance', 'ence', 'ous', 'ism',
+                      'ist', 'logy', 'ture', 'sure', 'ative', 'itive']
+    for sfx in deriv_suffixes:
+        if w_lower.endswith(sfx) and len(w_lower) > len(sfx) + 2:
+            score += 1.0
+            break
     
-    # Advanced words: long length
-    if length > 10:
-        return "advanced"
+    # 3) 否定/反向前缀：un-, im-, in-, ir-, il-, dis-, non-
+    neg_prefixes = ['un', 'im', 'in', 'ir', 'il', 'dis', 'non', 'anti', 'counter']
+    for pfx in neg_prefixes:
+        if w_lower.startswith(pfx) and len(w_lower) > len(pfx) + 3:
+            score += 0.5
+            break
     
-    # Common: everything else
-    return "common"
+    # 4) 其它常见前缀 (over-, under-, pre-, post-, inter-, trans-, super-, sub-)
+    other_prefixes = ['over', 'under', 'pre', 'post', 'inter', 'trans', 'super', 'sub', 'semi', 'multi']
+    for pfx in other_prefixes:
+        if w_lower.startswith(pfx) and len(w_lower) > len(pfx) + 3:
+            score += 0.5
+            break
+    
+    # 5) 复合词（含连字符或由两个词组成）
+    if '-' in w_lower:
+        score += 1.0
+    
+    # 6) 罕见字母组合（q, x, z 通常出现在更难/更专业的词中）
+    rare_count = sum(1 for ch in w_lower if ch in 'qxz')
+    score += rare_count * 0.5
+    
+    return score
+
+
+def batch_assign_tiers(words):
+    """对整个词库批量分配频次等级（按百分位）"""
+    scored = []
+    for w in words:
+        s = compute_word_importance(w.get("word", ""), w.get("meaning", ""))
+        scored.append((s, w))
+    
+    scored.sort(key=lambda x: x[0])  # 分数升序（最重要的在前）
+    
+    n = len(scored)
+    for i, (score, w) in enumerate(scored):
+        pct = i / n  # 百分位 0~1
+        if pct < 0.20:
+            w["frequencyTier"] = "core"
+        elif pct < 0.75:
+            w["frequencyTier"] = "common"
+        else:
+            w["frequencyTier"] = "advanced"
+    
+    return words
 
 
 # ============================================================
@@ -1558,7 +1511,8 @@ def enrich_word(word_data, use_api=True):
     enriched = dict(word_data)
     
     # 1. Frequency tier
-    enriched["frequencyTier"] = get_frequency_tier(word, word_data.get("meaning", ""))
+    # frequencyTier will be batch-assigned in process_file
+    enriched["frequencyTier"] = "common"
     
     # 2. Collocations - extract from existing example with Chinese
     collocations = []
@@ -1693,6 +1647,13 @@ def process_file(input_path, output_path, max_words=None, resume=False, use_api=
     
     with concurrent.futures.ThreadPoolExecutor(max_workers=MAX_WORKERS) as executor:
         executor.map(process_one, words)
+    
+    # 批量分配词频等级
+    enriched = batch_assign_tiers(enriched)
+    n_core = sum(1 for w in enriched if w.get("frequencyTier") == "core")
+    n_common = sum(1 for w in enriched if w.get("frequencyTier") == "common")
+    n_adv = sum(1 for w in enriched if w.get("frequencyTier") == "advanced")
+    print(f"  📊 词频分布: 核心{n_core} 常见{n_common} 进阶{n_adv}")
     
     print(f"\n💾 写入: {output_path}")
     with open(output_path, "w", encoding="utf-8") as f:

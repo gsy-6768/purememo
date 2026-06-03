@@ -26,9 +26,15 @@ export default function QuizMode({ word, allWords, onComplete }) {
     setSelected(option)
     const isCorrect = option === word.meaning
     setFeedback(isCorrect ? 'correct' : 'wrong')
-    setTimeout(() => {
-      onComplete(isCorrect ? 'known' : 'forgot')
-    }, 1000)
+    if (isCorrect) {
+      // 正确：短暂停顿后自动继续
+      setTimeout(() => onComplete('known'), 800)
+    }
+    // 错误：等待用户点击"下一题"按钮
+  }
+
+  function handleNext() {
+    onComplete('forgot')
   }
 
   return (
@@ -78,8 +84,13 @@ export default function QuizMode({ word, allWords, onComplete }) {
         <div className="text-center mt-4 text-success-500 font-medium text-sm">✅ 正确！</div>
       )}
       {feedback === 'wrong' && (
-        <div className="text-center mt-4 text-danger-500 text-sm">
-          ❌ 正确答案：<span className="font-medium">{word.meaning}</span>
+        <div className="text-center mt-5">
+          <div className="text-danger-500 text-sm mb-3">
+            ❌ 正确答案：<span className="font-semibold">{word.meaning}</span>
+          </div>
+          <button onClick={handleNext} className="px-8 py-2.5 bg-primary-600 text-white rounded-lg text-sm font-medium btn-press shadow-lg shadow-primary-500/20">
+            下一题 →
+          </button>
         </div>
       )}
     </div>
