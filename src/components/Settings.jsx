@@ -1,12 +1,11 @@
 import React, { useState, useEffect } from 'react'
 import { getSetting, setSetting } from '../db/database.js'
 
-export default function Settings({ darkMode, toggleDark }) {
+export default function Settings({ darkMode, toggleDark, fontSize, setFontSize }) {
   const [settings, setSettings] = useState({
     dailyNewLimit: 5000,
     dailyReviewLimit: 5000,
     autoSpeak: true,
-    fontSize: 'medium',
     newOrder: 'mixed'
   })
 
@@ -15,13 +14,11 @@ export default function Settings({ darkMode, toggleDark }) {
       const dailyNewLimit = await getSetting('dailyNewLimit') || '20'
       const dailyReviewLimit = await getSetting('dailyReviewLimit') || '100'
       const autoSpeak = await getSetting('autoSpeak')
-      const fontSize = await getSetting('fontSize') || 'medium'
       const newOrder = await getSetting('newOrder') || 'mixed'
       setSettings({
         dailyNewLimit: parseInt(dailyNewLimit),
         dailyReviewLimit: parseInt(dailyReviewLimit),
         autoSpeak: autoSpeak !== 'false',
-        fontSize,
         newOrder
       })
     }
@@ -98,9 +95,9 @@ export default function Settings({ darkMode, toggleDark }) {
                   { key: 'medium', label: '中' },
                   { key: 'large', label: '大' }
                 ].map(opt => (
-                  <button key={opt.key} onClick={() => updateSetting('fontSize', opt.key)}
+                  <button key={opt.key} onClick={() => setFontSize(opt.key)}
                     className={`flex-1 py-2 rounded-lg text-sm btn-press ${
-                      settings.fontSize === opt.key ? 'bg-primary-600 text-white' : 'bg-gray-100 dark:bg-gray-700'
+                      fontSize === opt.key ? 'bg-primary-600 text-white' : 'bg-gray-100 dark:bg-gray-700'
                     }`}
                   >{opt.label}</button>
                 ))}

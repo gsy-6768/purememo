@@ -11,15 +11,22 @@ import { getSetting, setSetting } from './db/database.js'
 
 export default function App() {
   const [darkMode, setDarkMode] = useState(false)
+  const [fontSize, setFontSize] = useState('medium')
   const [loaded, setLoaded] = useState(false)
   const location = useLocation()
 
   useEffect(() => {
-    getSetting('darkMode').then(val => {
-      if (val === 'true' || val === true) {
+    Promise.all([
+      getSetting('darkMode'),
+      getSetting('fontSize')
+    ]).then(([darkVal, fontVal]) => {
+      if (darkVal === 'true' || darkVal === true) {
         setDarkMode(true)
         document.documentElement.classList.add('dark')
       }
+      const fsize = fontVal || 'medium'
+      setFontSize(fsize)
+      document.documentElement.classList.add('font-' + fsize)
       setLoaded(true)
     })
   }, [])
@@ -29,6 +36,13 @@ export default function App() {
     setDarkMode(next)
     document.documentElement.classList.toggle('dark', next)
     await setSetting('darkMode', next ? 'true' : 'false')
+  }
+
+  const updateFontSize = async (size) => {
+    setFontSize(size)
+    document.documentElement.classList.remove('font-small', 'font-medium', 'font-large')
+    document.documentElement.classList.add('font-' + size)
+    await setSetting('fontSize', size)
   }
 
   if (!loaded) return (
@@ -49,7 +63,7 @@ export default function App() {
         <Route path="/library" element={<WordLibrary />} />
         <Route path="/stats" element={<Statistics />} />
         <Route path="/settings" element={
-          <Settings darkMode={darkMode} toggleDark={toggleDark} />
+          <Settings darkMode={darkMode} toggleDark={toggleDark} fontSize={fontSize} setFontSize={updateFontSize} />
         } />
       </Routes>
       {!hideNav && <NavBar />}

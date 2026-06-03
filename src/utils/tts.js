@@ -1,22 +1,49 @@
+import { Capacitor } from '@capacitor/core';
+import { TextToSpeech } from '@capacitor-community/text-to-speech';
+
 /**
- * Web Speech API TTS 发音工具
+ * TTS 发音工具 - 自动选择平台实现
+ * - Android (Capacitor): 原生 TextToSpeech 引擎
+ * - Web/PWA: Web Speech API 降级
  */
-export function speakWord(word, accent = 'us') {
+export async function speakWord(word, accent = 'us') {
+  const lang = accent === 'us' ? 'en-US' : 'en-GB';
+
+  // Capacitor 原生平台 (Android)
+  if (Capacitor.isNativePlatform()) {
+    try {
+      // 检查语言是否可用，不可用则打开安装引导
+      const { supported } = await TextToSpeech.isLanguageSupported({ lang });
+      if (!supported) {
+        TextToSpeech.openInstall();
+        return;
+      }
+      await TextToSpeech.speak({
+        text: word,
+        lang,
+        rate: 0.85,
+        pitch: 1.0,
+        volume: 1.0,
+      });
+    } catch (e) {
+      console.error('TTS error:', e);
+    }
+    return;
+  }
+
+  // Web/PWA 降级：Web Speech API
   if (!window.speechSynthesis) return;
   
-  window.speechSynthesis.cancel(); // 取消之前的发音
+  window.speechSynthesis.cancel();
   
   const utterance = new SpeechSynthesisUtterance(word);
-  utterance.lang = accent === 'us' ? 'en-US' : 'en-GB';
+  utterance.lang = lang;
   utterance.rate = 0.85;
   utterance.pitch = 1;
   utterance.volume = 1;
   
-  // 尝试选择合适的语音
   const voices = window.speechSynthesis.getVoices();
-  const preferredVoice = voices.find(v => 
-    accent === 'us' ? v.lang.startsWith('en-US') : v.lang.startsWith('en-GB')
-  );
+  const preferredVoice = voices.find(v => v.lang.startsWith(lang));
   if (preferredVoice) utterance.voice = preferredVoice;
   
   window.speechSynthesis.speak(utterance);
