@@ -1,8 +1,8 @@
 {
   "name": "purememo",
   "private": true,
-  "version": "1.0.0",
-  "description": "纯算法版墨墨背单词 - 100%离线本地记忆学习工具",
+  "version": "1.1.0",
+  "description": "\u7eaf\u7b97\u6cd5\u7248\u58a8\u58a8\u80cc\u5355\u8bcd - 100%\u79bb\u7ebf\u672c\u5730\u8bb0\u5fc6\u5b66\u4e60\u5de5\u5177",
   "type": "module",
   "scripts": {
     "dev": "vite",
