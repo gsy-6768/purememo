@@ -3,7 +3,7 @@ import { useParams, useSearchParams, useNavigate } from 'react-router-dom'
 import SpellingMode from './SpellingMode.jsx'
 import QuizMode from './QuizMode.jsx'
 import FillBlankMode from './FillBlankMode.jsx'
-import { getWordsByPlan, getWeakWords, saveWord, getSetting, getPlan } from '../db/database.js'
+import { getWordsByPlan, getWeakWords, saveWord, getSetting, getPlan, accumulateDailyStat } from '../db/database.js'
 import { calculateNextReview, getTodayNewCount, calculateCurrentMemoryStrength } from '../algorithms/spaced-repetition.js'
 import { getWordWeakness } from '../db/database.js'
 import { speakWord, speakSentence } from '../utils/tts.js'
@@ -81,8 +81,10 @@ export default function StudyView() {
     const newWord = { ...current, ...updated }
     if (!newWord.learnedDate) newWord.learnedDate = now
     
-    // 如果所有词都学完了或是新词第一次学
     await saveWord(newWord)
+    
+    // 实时更新每日统计（单词级，中途退出也不丢失）
+    accumulateDailyStat(planId, rating, !current.nextReviewTime)
     
     // 更新统计
     setSessionStats(prev => {
@@ -98,7 +100,7 @@ export default function StudyView() {
     
     if (index + 1 >= words.length) {
       // 学习完成，跳转到完成页
-      navigate(`/complete/${planId}`, { state: { stats: { ...sessionStats, reviewed: sessionStats.reviewed + 1 } } })
+      navigate(`/complete/${planId}`, { state: { stats: { ...sessionStats, reviewed: sessionStats.reviewed } } })
     } else {
       setIndex(i => i + 1)
     }

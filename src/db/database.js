@@ -262,6 +262,22 @@ export async function saveDailyStat(stat) {
   return d.put('dailyStats', stat);
 }
 
+/**
+ * 增量更新每日统计（每次学习一个单词后调用）
+ */
+export async function accumulateDailyStat(planId, wordRating, isNew) {
+  const d = await getDB();
+  const today = new Date().toISOString().slice(0, 10);
+  const existing = await d.get('dailyStats', today) || { date: today, planId, reviewed: 0, correct: 0, hazy: 0, forgot: 0, newLearned: 0, timestamp: Date.now() };
+  existing.reviewed += 1;
+  existing.correct += wordRating === 'known' ? 1 : 0;
+  existing.hazy += wordRating === 'hazy' ? 1 : 0;
+  existing.forgot += wordRating === 'forgot' ? 1 : 0;
+  existing.newLearned += isNew ? 1 : 0;
+  existing.timestamp = Date.now();
+  return d.put('dailyStats', existing);
+}
+
 // ==================== 设置 ====================
 
 export async function getSetting(key) {
