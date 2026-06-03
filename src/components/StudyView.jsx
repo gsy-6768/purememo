@@ -84,7 +84,7 @@ export default function StudyView() {
     await saveWord(newWord)
     
     // 实时更新每日统计（单词级，中途退出也不丢失）
-    accumulateDailyStat(planId, rating, !current.nextReviewTime)
+    await accumulateDailyStat(planId, rating, !current.nextReviewTime).catch(e => console.error('stat error:', e))
     
     // 更新统计
     setSessionStats(prev => {
