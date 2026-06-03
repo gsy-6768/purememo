@@ -61,45 +61,66 @@ export default function HomePage() {
     ]
     
     for (const lib of builtins) {
-      const old = existingLibs.get(lib.id)
-      // 强制用最新词库覆盖（无论是新增还是已有）
+      const oldLib = existingLibs.get(lib.id)
       const newLib = { id: lib.id, name: lib.name, words: lib.words }
+      const newWordMap = new Map(lib.words.map(w => [w.word, w]))
       
-      // 如果是已有计划，同步更新已入库的单词记录
-      if (old && old.words && old.words.length !== lib.words.length) {
-        const plans = await d.getAll('plans')
-        const plan = plans.find(p => p.libraryId === lib.id)
-        if (plan) {
-          const tx = d.transaction('words', 'readwrite')
-          // 获取已有单词记录
-          const existingWords = await tx.store.index('planId').getAll(plan.id)
-          const existingWordSet = new Set(existingWords.map(w => w.word))
-          
-          // 添加新词库中有但学习记录中没有的新单词
-          let added = 0
-          for (const w of lib.words) {
-            if (!existingWordSet.has(w.word)) {
+      // 找到关联的学习计划
+      const plans = await d.getAll('plans')
+      const plan = plans.find(p => p.libraryId === lib.id)
+      
+      if (plan) {
+        const tx = d.transaction('words', 'readwrite')
+        const existingWords = existingLibs.has(lib.id)
+          ? await tx.store.index('planId').getAll(plan.id)
+          : []
+        
+        const existingByWord = new Map(existingWords.map(w => [w.word, w]))
+        let updated = 0, added = 0
+        
+        for (const w of lib.words) {
+          const existing = existingByWord.get(w.word)
+          if (existing) {
+            // 更新已有单词的释义/音标/例句（保留学习进度）
+            if (existing.meaning !== (w.meaning || '') ||
+                existing.example !== (w.example || '') ||
+                existing.phonetic_uk !== (w.phonetic_uk || '') ||
+                existing.phonetic_us !== (w.phonetic_us || '') ||
+                existing.pos !== (w.pos || '')) {
               await tx.store.put({
-                id: `${plan.id}_${w.word}`,
-                planId: plan.id,
-                word: w.word,
+                ...existing,
                 phonetic_uk: w.phonetic_uk || '',
                 phonetic_us: w.phonetic_us || '',
                 pos: w.pos || '',
                 meaning: w.meaning || '',
                 example: w.example || '',
-                isPaused: false,
-                ef: 2.5, interval: 0, repetitions: 0,
-                memoryStrength: 0, totalReviews: 0,
-                correctStreak: 0, lastReviewTime: null,
-                nextReviewTime: null, learnedDate: null,
-                reviewHistory: []
               })
-              added++
+              updated++
             }
+          } else {
+            // 添加新单词
+            await tx.store.put({
+              id: `${plan.id}_${w.word}`,
+              planId: plan.id,
+              word: w.word,
+              phonetic_uk: w.phonetic_uk || '',
+              phonetic_us: w.phonetic_us || '',
+              pos: w.pos || '',
+              meaning: w.meaning || '',
+              example: w.example || '',
+              isPaused: false,
+              ef: 2.5, interval: 0, repetitions: 0,
+              memoryStrength: 0, totalReviews: 0,
+              correctStreak: 0, lastReviewTime: null,
+              nextReviewTime: null, learnedDate: null,
+              reviewHistory: []
+            })
+            added++
           }
-          await tx.done
-          if (added > 0) console.log(`为计划 ${plan.name} 补充了 ${added} 个新单词`)
+        }
+        await tx.done
+        if (updated > 0 || added > 0) {
+          console.log(`为计划 ${plan.name}: 更新 ${updated} 词, 新增 ${added} 词`)
         }
       }
       
