@@ -25,10 +25,8 @@ export default function HomePage() {
       const p = await getAllPlans()
       setPlans(p)
       
-      let dailyNewLimit = parseInt(await getSetting('dailyNewLimit'))
-      if (!dailyNewLimit) { await setSetting('dailyNewLimit', '20'); dailyNewLimit = 20 }
-      let dailyReviewLimit = parseInt(await getSetting('dailyReviewLimit'))
-      if (!dailyReviewLimit) { await setSetting('dailyReviewLimit', '100'); dailyReviewLimit = 100 }
+      const dailyNewLimit = parseInt(await getSetting('dailyNewLimit')) || 20
+      const dailyReviewLimit = parseInt(await getSetting('dailyReviewLimit')) || 100
       const todayStart = new Date().setHours(0, 0, 0, 0)
 
       // 连续打卡天数

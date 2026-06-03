@@ -43,6 +43,16 @@ export async function getDB() {
       if (!database.objectStoreNames.contains('settings')) {
         database.createObjectStore('settings', { keyPath: 'key' });
       }
+      
+      // 首次创建数据库时写入默认设置
+      if (oldVersion === 0) {
+        const settingStore = transaction.objectStore('settings');
+        settingStore.put({ key: 'dailyNewLimit', value: '20' });
+        settingStore.put({ key: 'dailyReviewLimit', value: '100' });
+        settingStore.put({ key: 'autoSpeak', value: 'true' });
+        settingStore.put({ key: 'newOrder', value: 'mixed' });
+        settingStore.put({ key: 'ttsSpeed', value: '0.85' });
+      }
     }
   });
   
