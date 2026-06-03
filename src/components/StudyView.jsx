@@ -162,17 +162,117 @@ export default function StudyView() {
               <p className="text-xs text-gray-300 mt-6">点击卡片或按空格键翻转</p>
             </div>
 
-            {/* 背面：释义 */}
-            <div className="card-face card-back bg-white dark:bg-gray-800 card-shadow flex flex-col items-center justify-center p-8">
-              <h2 className="text-2xl font-bold mb-2">{current.word}</h2>
-              <div className="text-lg text-primary-600 dark:text-primary-400 font-medium mb-4">
-                {current.meaning}
-              </div>
-              {current.example && (
-                <div className="text-sm text-gray-500 dark:text-gray-400 text-center italic border-t border-gray-100 dark:border-gray-700 pt-4 mt-2">
-                  "{current.example}"
+            {/* 背面：释义 + 丰富内容 */}
+            <div className="card-face card-back bg-white dark:bg-gray-800 card-shadow flex flex-col p-6 overflow-y-auto">
+              {/* 单词和释义 */}
+              <div className="text-center mb-3 shrink-0">
+                <div className="flex items-center justify-center gap-2 mb-1">
+                  <h2 className="text-2xl font-bold">{current.word}</h2>
+                  <button onClick={(e) => { e.stopPropagation(); speakWord(current.word, 'us') }} className="text-gray-400 hover:text-primary-500">🔊</button>
                 </div>
-              )}
+                <div className="text-base text-primary-600 dark:text-primary-400 font-medium">
+                  {current.meaning}
+                </div>
+              </div>
+
+              <div className="space-y-3 text-sm">
+                {/* 常考搭配 */}
+                {current.collocations && current.collocations.length > 0 && (
+                  <div className="bg-blue-50 dark:bg-blue-900/20 rounded-lg p-3">
+                    <div className="text-xs font-semibold text-blue-600 dark:text-blue-400 mb-1.5">📎 常考搭配</div>
+                    <div className="flex flex-wrap gap-1.5">
+                      {current.collocations.map((c, i) => (
+                        <span key={i} className="px-2 py-0.5 bg-white dark:bg-gray-700 rounded text-xs text-gray-700 dark:text-gray-300 border border-blue-100 dark:border-blue-800">
+                          {c}
+                        </span>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {/* 词根词缀 */}
+                {current.root && (current.root.root || current.root.prefix) && (
+                  <div className="bg-green-50 dark:bg-green-900/20 rounded-lg p-3">
+                    <div className="text-xs font-semibold text-green-600 dark:text-green-400 mb-1">🌱 词根词缀</div>
+                    <div className="text-xs text-gray-600 dark:text-gray-400 space-y-0.5">
+                      {current.root.prefix && current.root.prefix.root && (
+                        <div>
+                          <span className="font-medium text-green-700 dark:text-green-300">{current.root.prefix.root}</span>
+                          <span className="text-gray-500"> — {current.root.prefix.meaning}</span>
+                        </div>
+                      )}
+                      {current.root.root && (
+                        <div>
+                          <span className="font-medium text-green-700 dark:text-green-300">{current.root.root.root}</span>
+                          <span className="text-gray-500"> — {current.root.root.meaning}</span>
+                          <div className="text-gray-400">来源: {current.root.root.origin}</div>
+                        </div>
+                      )}
+                      {current.root.root && current.root.root.related && current.root.root.related.length > 0 && (
+                        <div className="text-gray-500 mt-1">
+                          同根词: {current.root.root.related.join(' · ')}
+                        </div>
+                      )}
+                      {current.root.suffix && current.root.suffix.root && (
+                        <div>
+                          <span className="font-medium text-green-700 dark:text-green-300">{current.root.suffix.root}</span>
+                          <span className="text-gray-500"> — {current.root.suffix.meaning}</span>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                )}
+
+                {/* 助记 */}
+                {current.mnemonic && (
+                  <div className="bg-purple-50 dark:bg-purple-900/20 rounded-lg p-3">
+                    <div className="text-xs font-semibold text-purple-600 dark:text-purple-400 mb-1">💡 助记</div>
+                    <div className="text-xs text-gray-600 dark:text-gray-400">{current.mnemonic}</div>
+                  </div>
+                )}
+
+                {/* 近/反义词 */}
+                {(current.synonyms?.length > 0 || current.antonyms?.length > 0) && (
+                  <div className="bg-amber-50 dark:bg-amber-900/20 rounded-lg p-3">
+                    <div className="text-xs font-semibold text-amber-600 dark:text-amber-400 mb-1">🔄 同义/反义</div>
+                    <div className="text-xs text-gray-600 dark:text-gray-400">
+                      {current.synonyms?.length > 0 && (
+                        <div>同义: {current.synonyms.slice(0,5).join(' · ')}</div>
+                      )}
+                      {current.antonyms?.length > 0 && (
+                        <div>反义: {current.antonyms.join(' · ')}</div>
+                      )}
+                    </div>
+                  </div>
+                )}
+
+                {/* 例句 */}
+                {current.example && (
+                  <div className="bg-gray-50 dark:bg-gray-700/30 rounded-lg p-3">
+                    <div className="text-xs font-semibold text-gray-500 dark:text-gray-400 mb-1">📖 例句</div>
+                    <div className="text-xs text-gray-600 dark:text-gray-400 italic leading-relaxed">
+                      "{current.example.split(' — ')[0]}"
+                    </div>
+                    {current.example.includes(' — ') && (
+                      <div className="text-xs text-gray-500 dark:text-gray-500 mt-0.5">
+                        {current.example.split(' — ')[1]}
+                      </div>
+                    )}
+                  </div>
+                )}
+
+                {/* 额外例句 */}
+                {current.extraExamples && current.extraExamples.length > 0 && (
+                  <div className="bg-gray-50 dark:bg-gray-700/30 rounded-lg p-3">
+                    <div className="text-xs font-semibold text-gray-500 dark:text-gray-400 mb-1">更多例句</div>
+                    {current.extraExamples.map((ex, i) => (
+                      <div key={i} className="text-xs text-gray-600 dark:text-gray-400 italic leading-relaxed mb-1 last:mb-0">
+                        "{ex}"
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
             </div>
           </div>
         </div>

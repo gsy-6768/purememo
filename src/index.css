@@ -39,6 +39,12 @@
 }
 .card-back { transform: rotateY(180deg); }
 
+/* 卡片背面滚动条 */
+.card-back::-webkit-scrollbar { width: 3px; }
+.card-back::-webkit-scrollbar-track { background: transparent; }
+.card-back::-webkit-scrollbar-thumb { background: #d1d5db; border-radius: 2px; }
+.dark .card-back::-webkit-scrollbar-thumb { background: #4b5563; }
+
 /* 滚动条 */
 ::-webkit-scrollbar { width: 4px; }
 ::-webkit-scrollbar-track { background: transparent; }

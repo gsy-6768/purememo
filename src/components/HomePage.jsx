@@ -21,7 +21,6 @@ export default function HomePage() {
       const p = await getAllPlans()
       setPlans(p)
       
-      // 统计每个计划的学习情况
       const dailyNewLimit = parseInt(await getSetting('dailyNewLimit')) || 20
       const dailyReviewLimit = parseInt(await getSetting('dailyReviewLimit')) || 100
       const todayStart = new Date().setHours(0, 0, 0, 0)
@@ -32,6 +31,21 @@ export default function HomePage() {
         const now = Date.now()
         const due = words.filter(w => w.nextReviewTime && w.nextReviewTime <= now && !w.isPaused)
         const newWords = words.filter(w => !w.nextReviewTime && !w.isPaused)
+        const learned = words.filter(w => w.lastReviewTime)
+
+        // 核心词掌握进度 (从词库数据获取 frequencyTier)
+        const libName = plan.name === '大学英语四级' ? 'cet4' : plan.name === '大学英语六级' ? 'cet6' : ''
+        let coreWords = [], totalCore = 0
+        if (libName === 'cet4') {
+          coreWords = cet4.filter(w => w.frequencyTier === 'core')
+          totalCore = coreWords.length
+        } else if (libName === 'cet6') {
+          coreWords = cet6.filter(w => w.frequencyTier === 'core')
+          totalCore = coreWords.length
+        }
+        // 已学的核心词
+        const learnedWords = new Set(learned.map(w => w.word))
+        const coreLearned = coreWords.filter(w => learnedWords.has(w.word)).length
 
         // 今日已学新词数
         const alreadyLearned = words.filter(w => w.learnedDate && w.learnedDate >= todayStart)
@@ -41,7 +55,7 @@ export default function HomePage() {
         // 今日待学习 = 复习上限内 + 新词上限内
         const todayStudy = Math.min(due.length, dailyReviewLimit) + availableNew
 
-        stats[plan.id] = { due: due.length, new: newWords.length, total: words.length, today: todayStudy }
+        stats[plan.id] = { due: due.length, new: newWords.length, total: words.length, today: todayStudy, coreLearned, totalCore }
       }
       setDueStats(stats)
     } catch (e) {
@@ -195,13 +209,26 @@ export default function HomePage() {
         <div className="space-y-3 mb-6">
           <h2 className="text-sm font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wide">我的学习计划</h2>
           {plans.map(plan => {
-            const s = dueStats[plan.id] || { due: 0, new: 0, total: 0 }
+            const s = dueStats[plan.id] || { due: 0, new: 0, total: 0, coreLearned: 0, totalCore: 0 }
+            const corePct = s.totalCore > 0 ? Math.round((s.coreLearned / s.totalCore) * 100) : 0
             return (
               <div key={plan.id} className="bg-white dark:bg-gray-800 rounded-xl card-shadow p-4">
                 <div className="flex justify-between items-center mb-2">
                   <h3 className="font-semibold text-lg">{plan.name}</h3>
                   <span className="text-xs text-gray-400">{s.total} 词</span>
                 </div>
+                {/* 核心词进度 */}
+                {s.totalCore > 0 && (
+                  <div className="mb-3">
+                    <div className="flex justify-between text-xs mb-1">
+                      <span className="text-amber-600 dark:text-amber-400 font-medium">⭐ 核心词</span>
+                      <span className="text-gray-500">{s.coreLearned}/{s.totalCore} ({corePct}%)</span>
+                    </div>
+                    <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-1.5">
+                      <div className="bg-amber-500 h-1.5 rounded-full transition-all" style={{ width: `${corePct}%` }}></div>
+                    </div>
+                  </div>
+                )}
                 <div className="flex gap-4 mb-3 text-sm">
                   <span className="text-success-500 font-medium">今日待学习 {s.today}</span>
                   <span className="text-danger-500">待复习 {s.due}</span>
