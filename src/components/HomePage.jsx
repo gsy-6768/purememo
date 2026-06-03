@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { getAllPlans, getWordsByPlan, getDB } from '../db/database.js'
+import { getAllPlans, getWordsByPlan, getSetting, getDB } from '../db/database.js'
 import cet4 from '../data/cet4.json'
 import cet6 from '../data/cet6.json'
 
@@ -21,14 +21,27 @@ export default function HomePage() {
       const p = await getAllPlans()
       setPlans(p)
       
-      // 统计每个计划待复习数
+      // 统计每个计划的学习情况
+      const dailyNewLimit = parseInt(await getSetting('dailyNewLimit')) || 20
+      const dailyReviewLimit = parseInt(await getSetting('dailyReviewLimit')) || 100
+      const todayStart = new Date().setHours(0, 0, 0, 0)
+
       const stats = {}
       for (const plan of p) {
         const words = await getWordsByPlan(plan.id)
         const now = Date.now()
         const due = words.filter(w => w.nextReviewTime && w.nextReviewTime <= now && !w.isPaused)
         const newWords = words.filter(w => !w.nextReviewTime && !w.isPaused)
-        stats[plan.id] = { due: due.length, new: newWords.length, total: words.length }
+
+        // 今日已学新词数
+        const alreadyLearned = words.filter(w => w.learnedDate && w.learnedDate >= todayStart)
+        const canLearnNew = Math.max(0, dailyNewLimit - alreadyLearned.length)
+        const availableNew = Math.min(newWords.length, canLearnNew)
+
+        // 今日待学习 = 复习上限内 + 新词上限内
+        const todayStudy = Math.min(due.length, dailyReviewLimit) + availableNew
+
+        stats[plan.id] = { due: due.length, new: newWords.length, total: words.length, today: todayStudy }
       }
       setDueStats(stats)
     } catch (e) {
@@ -169,13 +182,14 @@ export default function HomePage() {
                   <span className="text-xs text-gray-400">{s.total} 词</span>
                 </div>
                 <div className="flex gap-4 mb-3 text-sm">
+                  <span className="text-success-500 font-medium">今日待学习 {s.today}</span>
                   <span className="text-danger-500">待复习 {s.due}</span>
                   <span className="text-primary-500">可学新词 {s.new}</span>
                 </div>
                 <div className="flex gap-2">
                   <button
                     onClick={() => navigate(`/study/${plan.id}`)}
-                    disabled={s.due === 0 && s.new === 0}
+                    disabled={s.today === 0}
                     className="flex-1 bg-primary-600 text-white py-2.5 rounded-lg font-medium text-sm btn-press disabled:opacity-40 disabled:cursor-not-allowed"
                   >
                     开始学习
