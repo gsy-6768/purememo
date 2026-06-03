@@ -9,15 +9,46 @@
  * - memoryStrength: 记忆持久度 (0~1)
  */
 
+import { getSetting } from '../db/database.js'
+
 const MIN_EF = 1.3;
 const MAX_EF = 3.0;
-const INITIAL_EF = 2.5;
 
-// 首次学习的间隔阶梯（小时）
-const FIRST_INTERVAL = 0.167;   // 10 分钟
-const SECOND_INTERVAL = 24;     // 1 天
-const THIRD_INTERVAL = 72;      // 3 天
-const FOURTH_INTERVAL = 168;    // 7 天
+// 默认参数（可被用户自定义覆盖）
+const DEFAULT_PARAMS = {
+  initialEF: 2.5,
+  efForgotPenalty: 0.2,
+  efKnownBonus: 0.1,
+  firstInterval: 0.167,   // 10 分钟
+  secondInterval: 24,     // 1 天
+  thirdInterval: 72,      // 3 天
+  fourthInterval: 168,    // 7 天
+  maxInterval: 365,       // 最大间隔（天）
+}
+
+/**
+ * 从设置中读取用户自定义记忆参数
+ */
+export async function getAlgoParams() {
+  const p = DEFAULT_PARAMS
+  return {
+    initialEF: parseFloat(await getSetting('param_initialEF')) || p.initialEF,
+    efForgotPenalty: parseFloat(await getSetting('param_efForgotPenalty')) || p.efForgotPenalty,
+    efKnownBonus: parseFloat(await getSetting('param_efKnownBonus')) || p.efKnownBonus,
+    firstInterval: parseFloat(await getSetting('param_firstInterval')) || p.firstInterval,
+    secondInterval: parseFloat(await getSetting('param_secondInterval')) || p.secondInterval,
+    thirdInterval: parseFloat(await getSetting('param_thirdInterval')) || p.thirdInterval,
+    fourthInterval: parseFloat(await getSetting('param_fourthInterval')) || p.fourthInterval,
+    maxInterval: parseInt(await getSetting('param_maxInterval')) || p.maxInterval,
+  }
+}
+
+/**
+ * 获取默认参数值
+ */
+export function getDefaultParams() {
+  return { ...DEFAULT_PARAMS }
+}
 
 /**
  * 根据三个反馈按钮更新单词记忆状态
@@ -26,10 +57,11 @@ const FOURTH_INTERVAL = 168;    // 7 天
  * @param {number} reactionTime - 反应时间（毫秒）
  * @returns {Object} 更新后的单词状态
  */
-export function calculateNextReview(word, rating, reactionTime = 0) {
+export function calculateNextReview(word, rating, reactionTime = 0, params = null) {
   const now = Date.now();
+  const p = params || DEFAULT_PARAMS
   let {
-    ef = INITIAL_EF,
+    ef = p.initialEF,
     interval = 0,
     repetitions = 0,
     memoryStrength = 0,
@@ -51,14 +83,14 @@ export function calculateNextReview(word, rating, reactionTime = 0) {
   switch (rating) {
     case 'forgot':  // 忘记 - 红色
       repetitions = 0;
-      interval = FIRST_INTERVAL;
-      ef = Math.max(MIN_EF, ef - 0.2);
+      interval = p.firstInterval;
+      ef = Math.max(MIN_EF, ef - p.efForgotPenalty);
       correctStreak = 0;
       memoryStrength = Math.max(0, memoryStrength - 0.3);
       break;
 
     case 'hazy':    // 模糊 - 黄色
-      interval = Math.max(FIRST_INTERVAL, interval * 0.5);
+      interval = Math.max(p.firstInterval, interval * 0.5);
       ef = Math.max(MIN_EF, ef - 0.15);
       correctStreak = 0;
       memoryStrength = Math.max(0.1, memoryStrength - 0.1);
@@ -69,18 +101,21 @@ export function calculateNextReview(word, rating, reactionTime = 0) {
       correctStreak++;
 
       // 根据连续正确次数计算间隔
-      if (repetitions === 1) interval = SECOND_INTERVAL;
-      else if (repetitions === 2) interval = THIRD_INTERVAL;
-      else if (repetitions === 3) interval = FOURTH_INTERVAL;
+      if (repetitions === 1) interval = p.secondInterval;
+      else if (repetitions === 2) interval = p.thirdInterval;
+      else if (repetitions === 3) interval = p.fourthInterval;
       else interval = Math.round(interval * ef);
 
-      ef = Math.min(MAX_EF, ef + 0.1);
+      ef = Math.min(MAX_EF, ef + p.efKnownBonus);
       // 记忆持久度根据反应时间调整
       const timeBonus = reactionTime > 0 ? Math.min(0.15, reactionTime / 10000) : 0.05;
       memoryStrength = Math.min(1, memoryStrength + 0.1 + timeBonus);
       break;
   }
 
+  // 应用最大间隔限制
+  const maxIntervalHours = p.maxInterval * 24;
+  interval = Math.min(interval, maxIntervalHours);
   const nextReviewTime = now + (interval * 3600 * 1000);
 
   newHistory.intervalAfter = interval;
