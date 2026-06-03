@@ -6,6 +6,7 @@ const navItems = [
   { path: '/library', label: '词库', icon: '📚' },
   { path: '/roots', label: '词根', icon: '🌱' },
   { path: '/achievements', label: '成就', icon: '🏆' },
+  { path: '/reading', label: '阅读', icon: '📰' },
   { path: '/stats', label: '统计', icon: '📊' },
   { path: '/settings', label: '设置', icon: '⚙️' },
 ]
