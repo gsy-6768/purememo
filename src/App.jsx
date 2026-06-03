@@ -4,6 +4,8 @@ import NavBar from './components/NavBar.jsx'
 import StudyView from './components/StudyView.jsx'
 import StudyComplete from './components/StudyComplete.jsx'
 import WordLibrary from './components/WordLibrary.jsx'
+import RootExplorer from './components/RootExplorer.jsx'
+import Achievements from './components/Achievements.jsx'
 import Statistics from './components/Statistics.jsx'
 import Settings from './components/Settings.jsx'
 import HomePage from './components/HomePage.jsx'
@@ -61,6 +63,8 @@ export default function App() {
         <Route path="/study/:planId" element={<StudyView />} />
         <Route path="/complete/:planId" element={<StudyComplete />} />
         <Route path="/library" element={<WordLibrary />} />
+        <Route path="/roots" element={<RootExplorer />} />
+        <Route path="/achievements" element={<Achievements />} />
         <Route path="/stats" element={<Statistics />} />
         <Route path="/settings" element={
           <Settings darkMode={darkMode} toggleDark={toggleDark} fontSize={fontSize} setFontSize={updateFontSize} />

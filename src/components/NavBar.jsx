@@ -4,6 +4,8 @@ import { Link } from 'react-router-dom'
 const navItems = [
   { path: '/', label: '学习', icon: '📖' },
   { path: '/library', label: '词库', icon: '📚' },
+  { path: '/roots', label: '词根', icon: '🌱' },
+  { path: '/achievements', label: '成就', icon: '🏆' },
   { path: '/stats', label: '统计', icon: '📊' },
   { path: '/settings', label: '设置', icon: '⚙️' },
 ]

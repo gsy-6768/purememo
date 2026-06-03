@@ -1,13 +1,15 @@
 import React, { useState, useEffect } from 'react'
-import { getAllDailyStats, getWordsByPlan, getAllPlans, exportAllData, importAllData, clearAllData } from '../db/database.js'
+import { getAllDailyStats, getWordsByPlan, getAllPlans, getReviewForecast, exportAllData, importAllData, clearAllData } from '../db/database.js'
 import { calculateCurrentMemoryStrength, getMasteryLevel } from '../algorithms/spaced-repetition.js'
 import { LineChart, Line, BarChart, Bar, PieChart, Pie, Cell, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts'
+import ReviewCalendar from './ReviewCalendar.jsx'
 
 export default function Statistics() {
   const [dailyStats, setDailyStats] = useState([])
   const [plans, setPlans] = useState([])
   const [masteryData, setMasteryData] = useState({ unlearned: 0, learning: 0, mastered: 0, forgotten: 0 })
   const [tab, setTab] = useState('daily')
+  const [forecast, setForecast] = useState({})
 
   useEffect(() => {
     async function load() {
@@ -30,6 +32,13 @@ export default function Statistics() {
         }
       }
       setMasteryData({ unlearned, learning, mastered, forgotten })
+      
+      // 复习预测（取第一个计划或全部）
+      const targetPlan = p[0]
+      if (targetPlan) {
+        const f = await getReviewForecast(targetPlan.id, 90)
+        setForecast(f)
+      }
     }
     load()
   }, [])
@@ -82,6 +91,7 @@ export default function Statistics() {
       {/* 标签切换 */}
       <div className="flex gap-2 mb-4">
         {[
+          { key: 'calendar', label: '📅 日历' },
           { key: 'daily', label: '每日学习' },
           { key: 'mastery', label: '掌握程度' },
           { key: 'data', label: '数据管理' }
@@ -93,6 +103,10 @@ export default function Statistics() {
           >{t.label}</button>
         ))}
       </div>
+
+      {tab === 'calendar' && (
+        <ReviewCalendar forecast={forecast} />
+      )}
 
       {tab === 'daily' && (
         <div className="space-y-4">

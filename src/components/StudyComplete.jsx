@@ -1,35 +1,79 @@
 import React, { useEffect, useState } from 'react'
 import { useParams, useLocation, useNavigate } from 'react-router-dom'
-import { getPlan, saveDailyStat } from '../db/database.js'
+import { getPlan, saveDailyStat, getAllPlans, getWordsByPlan, getAllDailyStats } from '../db/database.js'
+import { checkAchievements } from '../db/achievements.js'
 
 export default function StudyComplete() {
   const { planId } = useParams()
   const location = useLocation()
   const navigate = useNavigate()
   const [plan, setPlan] = useState(null)
+  const [newAchievements, setNewAchievements] = useState([])
   const stats = location.state?.stats || { reviewed: 0, correct: 0, hazy: 0, forgot: 0, newLearned: 0 }
 
   useEffect(() => {
     getPlan(planId).then(setPlan)
     
-    // 保存每日统计
-    const today = new Date().toISOString().slice(0, 10)
-    saveDailyStat({
-      date: today,
-      planId,
-      reviewed: stats.reviewed,
-      correct: stats.correct,
-      hazy: stats.hazy,
-      forgot: stats.forgot,
-      newLearned: stats.newLearned,
-      timestamp: Date.now()
-    })
+    async function onComplete() {
+      const p = await getPlan(planId)
+      setPlan(p)
+      
+      // 保存每日统计
+      const today = new Date().toISOString().slice(0, 10)
+      await saveDailyStat({
+        date: today,
+        planId,
+        reviewed: stats.reviewed,
+        correct: stats.correct,
+        hazy: stats.hazy,
+        forgot: stats.forgot,
+        newLearned: stats.newLearned,
+        timestamp: Date.now()
+      })
+      
+      // 计算统计数据并检测成就
+      const all = await getAllPlans()
+      let totalLearned = 0, totalReviews = 0
+      for (const pl of all) {
+        const words = await getWordsByPlan(pl.id)
+        totalLearned += words.filter(w => w.lastReviewTime).length
+        totalReviews += words.reduce((s, w) => s + (w.totalReviews || 0), 0)
+      }
+      const allStats = await getAllDailyStats()
+      const dateSet = new Set(allStats.map(s => s.date))
+      let streak = 0
+      const d = new Date()
+      while (true) {
+        if (dateSet.has(d.toISOString().slice(0, 10))) { streak++; d.setDate(d.getDate() - 1) }
+        else break
+      }
+      const dailyMax = allStats.reduce((m, s) => Math.max(m, (s.newLearned || 0) + (s.reviewed || 0)), 0)
+      
+      const newAch = await checkAchievements({ totalLearned, totalReviews, streak, dailyMax })
+      if (newAch.length > 0) setNewAchievements(newAch)
+    }
+    onComplete()
   }, [])
 
   const accuracy = stats.reviewed > 0 ? Math.round((stats.correct / stats.reviewed) * 100) : 0
 
   return (
     <div className="min-h-screen flex flex-col items-center justify-center px-4 max-w-lg mx-auto">
+      {/* 新成就弹窗 */}
+      {newAchievements.length > 0 && (
+        <div className="w-full bg-gradient-to-r from-yellow-50 to-orange-50 dark:from-yellow-900/20 dark:to-orange-900/20 rounded-xl card-shadow p-4 mb-4 text-center border border-yellow-200 dark:border-yellow-700">
+          <div className="text-2xl mb-1">🏆</div>
+          <div className="text-sm font-bold text-yellow-700 dark:text-yellow-400 mb-2">成就解锁！</div>
+          {newAchievements.map(ach => (
+            <div key={ach.id} className="flex items-center gap-2 justify-center text-sm mb-1 last:mb-0">
+              <span>{ach.icon}</span>
+              <span className="font-medium text-gray-700 dark:text-gray-300">{ach.title}</span>
+              <span className="text-xs text-gray-400">— {ach.desc}</span>
+            </div>
+          ))}
+        </div>
+      )}
+
       <div className="text-5xl mb-4">🎉</div>
       <h1 className="text-2xl font-bold mb-2">学习完成！</h1>
       <p className="text-gray-500 dark:text-gray-400 mb-8">{plan?.name || ''}</p>

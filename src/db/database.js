@@ -211,6 +211,40 @@ export function getWordWeakness(word) {
   return { weak: false, level: 'none', reason: '' };
 }
 
+// ==================== 复习预测 ====================
+
+/**
+ * 获取未来 N 天每天到期复习数
+ */
+export async function getReviewForecast(planId, days = 60) {
+  const d = await getDB();
+  const all = await d.getAllFromIndex('words', 'planId', planId);
+  
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  const forecast = {};
+  
+  for (let i = 0; i < days; i++) {
+    const date = new Date(today);
+    date.setDate(date.getDate() + i);
+    const key = date.toISOString().slice(0, 10);
+    forecast[key] = 0;
+  }
+  
+  for (const w of all) {
+    if (!w.nextReviewTime || w.isPaused) continue;
+    const reviewDate = new Date(w.nextReviewTime);
+    reviewDate.setHours(0, 0, 0, 0);
+    const diffDays = Math.floor((reviewDate - today) / 86400000);
+    if (diffDays >= 0 && diffDays < days) {
+      const key = reviewDate.toISOString().slice(0, 10);
+      forecast[key] = (forecast[key] || 0) + 1;
+    }
+  }
+  
+  return forecast;
+}
+
 // ==================== 每日统计 ====================
 
 export async function getDailyStat(date) {
