@@ -20,6 +20,7 @@
     "recharts": "^2.12.7"
   },
   "devDependencies": {
+    "@bubblewrap/cli": "^1.24.1",
     "@vitejs/plugin-react": "^4.3.4",
     "autoprefixer": "^10.4.20",
     "postcss": "^8.4.49",

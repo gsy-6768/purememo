@@ -1,0 +1,23 @@
+{
+  "packageName": "com.purememo.app",
+  "displayName": "PureMemo",
+  "hostName": "gsy-6768.github.io",
+  "launchUrl": "/purememo/",
+  "themeColor": "#4F46E5",
+  "backgroundColor": "#FFFFFF",
+  "navigationColor": "#4F46E5",
+  "appVersionName": "1.0.0",
+  "appVersionCode": 1,
+  "enableNotifications": true,
+  "enableSiteSettingsShortcut": true,
+  "isChromeOSOnly": false,
+  "orientation": "portrait",
+  "appName": "PureMemo",
+  "iconUrl": "https://gsy-6768.github.io/purememo/icons/icon-512.png",
+  "maskableIconUrl": "https://gsy-6768.github.io/purememo/icons/icon-512.png",
+  "splashScreenFadeOutDuration": 300,
+  "signingKey": {
+    "alias": "purememo",
+    "password": "purememo123"
+  }
+}
