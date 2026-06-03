@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react'
 import { getAllPlans, getWordsByPlan, getWeakWords, saveWord, getDB, deletePlan } from '../db/database.js'
+import { ListSkeleton } from './Skeleton.jsx'
 
 export default function WordLibrary() {
   const [plans, setPlans] = useState([])

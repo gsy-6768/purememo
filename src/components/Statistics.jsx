@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react'
 import { getAllDailyStats, getWordsByPlan, getAllPlans, getReviewForecast, exportAllData, importAllData, clearAllData } from '../db/database.js'
 import { calculateCurrentMemoryStrength, getMasteryLevel } from '../algorithms/spaced-repetition.js'
+import { PageSkeleton } from './Skeleton.jsx'
 import { LineChart, Line, BarChart, Bar, PieChart, Pie, Cell, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts'
 import ReviewCalendar from './ReviewCalendar.jsx'
 

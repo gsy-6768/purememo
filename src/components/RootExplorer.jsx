@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useMemo } from 'react'
 import { useNavigate } from 'react-router-dom'
 import rootsData from '../data/roots.json'
+import { ListSkeleton } from './Skeleton.jsx'
 
 const ORIGIN_TAGS = {
   '拉丁': { label: '拉丁语', color: 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400' },

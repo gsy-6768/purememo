@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { getAllPlans, getAllDailyStats, getWordsByPlan, getSetting, getWeakWords, getDB } from '../db/database.js'
+import { useToast } from './Toast.jsx'
 // cet4/cet6 loaded lazily to reduce bundle size
 
 export default function HomePage() {
@@ -11,6 +12,7 @@ export default function HomePage() {
   const [streak, setStreak] = useState(0)
   const [todayDone, setTodayDone] = useState({ learned: 0, reviewed: 0, targetNew: 20, targetReview: 100 })
   const navigate = useNavigate()
+  const toast = useToast()
 
   useEffect(() => { loadData() }, [])
 
@@ -103,16 +105,15 @@ export default function HomePage() {
     const existing = await d.getAll('libraries')
     const existingLibs = new Map(existing.map(l => [l.id, l]))
     
-    const builtins = [
-      { id: 'cet4', name: '大学英语四级', words: cet4 },
-      { id: 'cet6', name: '大学英语六级', words: cet6 }
-    ]
-    
     // 懒加载词库数据
-    const [cet4, cet6] = await Promise.all([
+    const [cet4json, cet6json] = await Promise.all([
       import('../data/cet4.json').then(m => m.default),
       import('../data/cet6.json').then(m => m.default),
     ])
+    const builtins = [
+      { id: 'cet4', name: '大学英语四级', words: cet4json },
+      { id: 'cet6', name: '大学英语六级', words: cet6json }
+    ]
     for (const lib of builtins) {
       const oldLib = existingLibs.get(lib.id)
       const newLib = { id: lib.id, name: lib.name, words: lib.words }
@@ -253,13 +254,23 @@ export default function HomePage() {
       for (const w of batch) store.put(w)
     }
     await tx.done
+    toast(`已创建「${lib.name}」学习计划`, 'success')
     
     loadData()
   }
 
   if (loading) return (
-    <div className="flex items-center justify-center pt-20">
-      <p className="text-gray-400 animate-pulse">加载中...</p>
+    <div className="pb-20 px-4 max-w-lg mx-auto animate-pulse pt-20">
+      <div className="h-6 bg-gray-200 dark:bg-gray-700 rounded w-1/3 mb-4" />
+      <div className="space-y-3">
+        {[1,2,3].map(i => (
+          <div key={i} className="bg-white dark:bg-gray-800 rounded-xl p-4">
+            <div className="h-4 bg-gray-200 dark:bg-gray-700 rounded w-1/4 mb-3" />
+            <div className="h-3 bg-gray-200 dark:bg-gray-700 rounded w-2/3 mb-2" />
+            <div className="h-3 bg-gray-200 dark:bg-gray-700 rounded w-1/2" />
+          </div>
+        ))}
+      </div>
     </div>
   )
 

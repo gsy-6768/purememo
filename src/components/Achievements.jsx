@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react'
 import { getAllPlans, getWordsByPlan, getAllDailyStats } from '../db/database.js'
 import { ACHIEVEMENTS, TIER_CONFIG, getAllAchievements } from '../db/achievements.js'
+import { PageSkeleton } from './Skeleton.jsx'
 
 export default function Achievements() {
   const [achievements, setAchievements] = useState([])
@@ -43,11 +44,7 @@ export default function Achievements() {
 
   const unlockedCount = achievements.filter(a => a.unlocked).length
 
-  if (loading) return (
-    <div className="flex items-center justify-center pt-20">
-      <p className="text-gray-400 animate-pulse">加载中...</p>
-    </div>
-  )
+  if (loading) return <PageSkeleton />
 
   return (
     <div className="pb-20 px-4 max-w-lg mx-auto">
