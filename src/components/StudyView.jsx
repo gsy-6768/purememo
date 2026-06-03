@@ -44,8 +44,8 @@ export default function StudyView() {
       
       // 新词数量限制
       const todayNew = await getSetting('dailyNewLimit')
-      const dailyNewLimit = todayNew ? parseInt(todayNew) : (p?.dailyNewLimit || 20)
-      const dailyReviewLimit = parseInt(await getSetting('dailyReviewLimit')) || (p?.dailyReviewLimit || 100)
+      const dailyNewLimit = todayNew ? parseInt(todayNew) : 20
+      const dailyReviewLimit = parseInt(await getSetting('dailyReviewLimit')) || 100
       
       const alreadyLearned = allWords.filter(w => w.learnedDate && w.learnedDate >= new Date().setHours(0,0,0,0))
       const canLearnNew = Math.max(0, dailyNewLimit - alreadyLearned.length)

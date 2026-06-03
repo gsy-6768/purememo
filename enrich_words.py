@@ -194,10 +194,7 @@ ROOT_DB = {
            "related": ["import", "impossible", "immature", "imperfect"]},
     "pro": {"root": "pro", "origin": "拉丁语 pro (向前/赞成)", "meaning": "向前，赞成，公开",
             "related": ["progress", "promote", "propose", "proclaim", "pro-active"]},
-    "a": {"root": "a/an", "origin": "拉丁/希腊语 (否定前缀)", "meaning": "不，无，非",
-          "related": ["amoral", "asymmetry", "apathy", "anhydrous"]},
-    "an": {"root": "a/an", "origin": "拉丁/希腊语 (否定前缀)", "meaning": "不，无，非",
-           "related": ["amoral", "asymmetry", "apathy", "anhydrous"]},
+    # "a"/"an" are handled by prefix matching, not needed in ROOT_DB
     "de": {"root": "de", "origin": "拉丁语 de (向下/去除)", "meaning": "向下，去除，否定",
            "related": ["decline", "decrease", "delete", "depart", "destroy"]},
     "en": {"root": "en/em", "origin": "拉丁语 (使动前缀)", "meaning": "使…，进入",
@@ -1334,16 +1331,11 @@ def find_roots(word, root_db):
             # Skip single-letter matches
             if len(root_key) <= 1:
                 continue
-            # For short roots (< 4 chars), ensure they form a real morpheme
-            # by checking they're at word boundaries (start/end) or followed/preceded by a vowel
+            # For short roots (< 4 chars), only match at word start
+            # to avoid false positives like "in" in "attain" or "re" in "bureau"
             if len(root_key) <= 3:
-                idx = w_lower.find(root_key)
-                # Check if it's at start, end, or surrounded by vowels/consonants
-                prev_char = w_lower[idx - 1] if idx > 0 else ''
-                next_char = w_lower[idx + len(root_key)] if idx + len(root_key) < len(w_lower) else ''
-                # Skip if it's in the middle of a word surrounded by letters (not a real morpheme)
-                if prev_char and prev_char.isalpha() and next_char and next_char.isalpha():
-                    continue  # Short root embedded in middle of word - likely false positive
+                if not w_lower.startswith(root_key):
+                    continue  # Short root must be at word start
             info = root_db[root_key]
             found.append({
                 "root": info["root"],
@@ -1363,8 +1355,8 @@ def find_roots(word, root_db):
         ("anti", "anti", "反对"), ("auto", "auto", "自己"), ("bi", "bi", "二"),
         ("co", "co", "共同"), ("com", "com", "共同"), ("con", "con", "共同"),
         ("de", "de", "向下/去除"), ("ex", "ex", "向外/前"), ("in", "in", "向内/不"),
-        ("im", "im", "向内/不"), ("pro", "pro", "向前/赞成"), ("a", "a", "不/无"),
-        ("an", "an", "不/无"), ("post", "post", "在…后"), ("extra", "extra", "额外/超出"),
+        ("im", "im", "向内/不"), ("pro", "pro", "向前/赞成"),
+        ("post", "post", "在…后"), ("extra", "extra", "额外/超出"),
         ("semi", "semi", "半"), ("multi", "multi", "多"), ("micro", "micro", "微"),
         ("macro", "macro", "大"), ("mono", "mono", "单一"), ("poly", "poly", "多"),
     ]

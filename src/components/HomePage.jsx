@@ -25,8 +25,9 @@ export default function HomePage() {
       const p = await getAllPlans()
       setPlans(p)
       
-      const dailyNewLimit = parseInt(await getSetting('dailyNewLimit')) || 20
-      const dailyReviewLimit = parseInt(await getSetting('dailyReviewLimit')) || 100
+      // 首次安装时初始化默认设置
+      const dailyNewLimit = parseInt(await getSetting('dailyNewLimit')) || await setSetting('dailyNewLimit', '20') || 20
+      const dailyReviewLimit = parseInt(await getSetting('dailyReviewLimit')) || await setSetting('dailyReviewLimit', '100') || 100
       const todayStart = new Date().setHours(0, 0, 0, 0)
 
       // 连续打卡天数
@@ -210,8 +211,8 @@ export default function HomePage() {
       name: lib.name,
       libraryId: libId,
       createdAt: Date.now(),
-      dailyNewLimit: 5000,
-      dailyReviewLimit: 5000
+      dailyNewLimit: 20,
+      dailyReviewLimit: 100
     }
     await d.put('plans', plan)
     
