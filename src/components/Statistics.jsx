@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react'
 import { getAllDailyStats, getWordsByPlan, getAllPlans, exportAllData, importAllData, clearAllData } from '../db/database.js'
 import { calculateCurrentMemoryStrength, getMasteryLevel } from '../algorithms/spaced-repetition.js'
+import { LineChart, Line, BarChart, Bar, PieChart, Pie, Cell, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts'
 
 export default function Statistics() {
   const [dailyStats, setDailyStats] = useState([])
@@ -94,24 +95,38 @@ export default function Statistics() {
       </div>
 
       {tab === 'daily' && (
-        <div className="bg-white dark:bg-gray-800 rounded-xl card-shadow p-4">
-          <h2 className="font-semibold mb-4">最近 30 天学习记录</h2>
-          {dailyStats.length === 0 ? (
-            <p className="text-gray-400 text-center py-8">暂无学习记录，开始学习吧！</p>
-          ) : (
-            <div className="space-y-2">
-              {dailyStats.slice().reverse().map(stat => (
-                <div key={stat.date} className="flex items-center justify-between py-2 border-b border-gray-50 dark:border-gray-700 last:border-0">
-                  <span className="text-sm text-gray-500">{stat.date}</span>
-                  <div className="flex gap-3 text-xs">
-                    <span className="text-primary-500">新学 {stat.newLearned || 0}</span>
-                    <span className="text-gray-500">复习 {stat.reviewed || 0}</span>
-                    <span className={`${(stat.correct / Math.max(1, stat.reviewed)) > 0.7 ? 'text-success-500' : 'text-warning-500'}`}>
-                      {stat.reviewed > 0 ? Math.round((stat.correct / stat.reviewed) * 100) : 0}%
-                    </span>
-                  </div>
-                </div>
-              ))}
+        <div className="space-y-4">
+          <div className="bg-white dark:bg-gray-800 rounded-xl card-shadow p-4">
+            <h2 className="font-semibold mb-4">最近 30 天学习趋势</h2>
+            {dailyStats.length === 0 ? (
+              <p className="text-gray-400 text-center py-8">暂无学习记录，开始学习吧！</p>
+            ) : (
+              <ResponsiveContainer width="100%" height={220}>
+                <LineChart data={dailyStats}>
+                  <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
+                  <XAxis dataKey="date" tick={{ fontSize: 10 }} tickFormatter={v => v.slice(5)} />
+                  <YAxis tick={{ fontSize: 10 }} allowDecimals={false} />
+                  <Tooltip />
+                  <Legend />
+                  <Line type="monotone" dataKey="reviewed" name="复习" stroke="#4F46E5" strokeWidth={2} dot={false} />
+                  <Line type="monotone" dataKey="newLearned" name="新学" stroke="#22c55e" strokeWidth={2} dot={false} />
+                </LineChart>
+              </ResponsiveContainer>
+            )}
+          </div>
+
+          {dailyStats.length > 0 && (
+            <div className="bg-white dark:bg-gray-800 rounded-xl card-shadow p-4">
+              <h2 className="font-semibold mb-4">正确率趋势</h2>
+              <ResponsiveContainer width="100%" height={180}>
+                <BarChart data={dailyStats.map(d => ({ ...d, accuracy: d.reviewed > 0 ? Math.round((d.correct / d.reviewed) * 100) : 0 }))}>
+                  <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
+                  <XAxis dataKey="date" tick={{ fontSize: 10 }} tickFormatter={v => v.slice(5)} />
+                  <YAxis domain={[0, 100]} tick={{ fontSize: 10 }} />
+                  <Tooltip formatter={(v) => `${v}%`} />
+                  <Bar dataKey="accuracy" name="正确率" fill="#22c55e" radius={[3, 3, 0, 0]} />
+                </BarChart>
+              </ResponsiveContainer>
             </div>
           )}
         </div>
@@ -124,25 +139,29 @@ export default function Statistics() {
             <p className="text-gray-400 text-center py-8">暂无单词数据</p>
           ) : (
             <>
-              {/* 环形进度图简化版 */}
               <div className="flex justify-center mb-6">
-                <div className="relative w-32 h-32">
-                  <svg viewBox="0 0 100 100" className="w-full h-full">
-                    <circle cx="50" cy="50" r="40" fill="none" stroke="#e5e7eb" strokeWidth="10" />
-                    <circle cx="50" cy="50" r="40" fill="none" stroke="#22c55e" strokeWidth="10"
-                      strokeDasharray={`${masteredPct * 2.51} 251`} strokeLinecap="round"
-                      transform="rotate(-90 50 50)" />
-                  </svg>
-                  <div className="absolute inset-0 flex items-center justify-center">
-                    <span className="text-2xl font-bold text-success-500">{masteredPct}%</span>
-                  </div>
-                </div>
+                <ResponsiveContainer width={220} height={220}>
+                  <PieChart>
+                    <Pie data={[
+                      { name: '未学习', value: masteryData.unlearned, color: '#9ca3af' },
+                      { name: '学习中', value: masteryData.learning, color: '#f59e0b' },
+                      { name: '已掌握', value: masteryData.mastered, color: '#22c55e' },
+                      { name: '已遗忘', value: masteryData.forgotten, color: '#f87171' },
+                    ]} cx="50%" cy="50%" innerRadius={55} outerRadius={90}
+                      dataKey="value" paddingAngle={2}>
+                      {['#9ca3af', '#f59e0b', '#22c55e', '#f87171'].map((c, i) => (
+                        <Cell key={i} fill={c} />
+                      ))}
+                    </Pie>
+                    <Tooltip />
+                  </PieChart>
+                </ResponsiveContainer>
               </div>
               <div className="space-y-2 text-sm">
-                <div className="flex justify-between"><span className="text-gray-500">未学习</span><span>{masteryData.unlearned}</span></div>
-                <div className="flex justify-between"><span className="text-warning-500">学习中</span><span>{masteryData.learning}</span></div>
-                <div className="flex justify-between"><span className="text-success-500">已掌握</span><span>{masteryData.mastered}</span></div>
-                <div className="flex justify-between"><span className="text-danger-400">已遗忘</span><span>{masteryData.forgotten}</span></div>
+                <div className="flex items-center gap-2"><span className="w-3 h-3 rounded-sm bg-gray-400"></span><span className="flex-1 text-gray-500">未学习</span><span>{masteryData.unlearned}</span></div>
+                <div className="flex items-center gap-2"><span className="w-3 h-3 rounded-sm bg-warning-500"></span><span className="flex-1 text-gray-500">学习中</span><span>{masteryData.learning}</span></div>
+                <div className="flex items-center gap-2"><span className="w-3 h-3 rounded-sm bg-success-500"></span><span className="flex-1 text-gray-500">已掌握</span><span>{masteryData.mastered}</span></div>
+                <div className="flex items-center gap-2"><span className="w-3 h-3 rounded-sm bg-danger-400"></span><span className="flex-1 text-gray-500">已遗忘</span><span>{masteryData.forgotten}</span></div>
               </div>
             </>
           )}
