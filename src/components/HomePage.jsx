@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { getAllPlans, getWordsByPlan, getSetting, getDB } from '../db/database.js'
+import { getAllPlans, getAllDailyStats, getWordsByPlan, getSetting, getDB } from '../db/database.js'
 import cet4 from '../data/cet4.json'
 import cet6 from '../data/cet6.json'
 
@@ -8,7 +8,9 @@ export default function HomePage() {
   const [plans, setPlans] = useState([])
   const [dueStats, setDueStats] = useState({})
   const [loading, setLoading] = useState(true)
-  const [modePicker, setModePicker] = useState(null) // { planId } or null
+  const [modePicker, setModePicker] = useState(null)
+  const [streak, setStreak] = useState(0)
+  const [todayDone, setTodayDone] = useState({ learned: 0, reviewed: 0, targetNew: 20, targetReview: 100 })
   const navigate = useNavigate()
 
   useEffect(() => { loadData() }, [])
@@ -25,6 +27,27 @@ export default function HomePage() {
       const dailyNewLimit = parseInt(await getSetting('dailyNewLimit')) || 20
       const dailyReviewLimit = parseInt(await getSetting('dailyReviewLimit')) || 100
       const todayStart = new Date().setHours(0, 0, 0, 0)
+
+      // 连续打卡天数
+      const allStats = await getAllDailyStats()
+      const dateSet = new Set(allStats.map(s => s.date))
+      let streakCount = 0
+      const d = new Date()
+      while (true) {
+        const dateStr = d.toISOString().slice(0, 10)
+        if (dateSet.has(dateStr)) {
+          streakCount++
+          d.setDate(d.getDate() - 1)
+        } else break
+      }
+      setStreak(streakCount)
+
+      // 今日完成情况
+      const today = new Date().toISOString().slice(0, 10)
+      const todayStats = allStats.filter(s => s.date === today)
+      const todayLearned = todayStats.reduce((sum, s) => sum + (s.newLearned || 0), 0)
+      const todayReviewed = todayStats.reduce((sum, s) => sum + (s.reviewed || 0), 0)
+      setTodayDone({ learned: todayLearned, reviewed: todayReviewed, targetNew: dailyNewLimit, targetReview: dailyReviewLimit })
 
       const stats = {}
       for (const plan of p) {
@@ -224,10 +247,51 @@ export default function HomePage() {
 
   return (
     <div className="pb-20 px-4 max-w-lg mx-auto">
-      {/* 标题 */}
+      {/* 标题 + 打卡 */}
       <div className="pt-6 pb-4">
-        <h1 className="text-2xl font-bold">PureMemo</h1>
-        <p className="text-sm text-gray-500 dark:text-gray-400">纯算法·离线背单词</p>
+        <div className="flex items-center justify-between">
+          <h1 className="text-2xl font-bold">PureMemo</h1>
+          {streak > 0 && (
+            <div className="flex items-center gap-1 text-sm">
+              <span className="text-orange-500">🔥</span>
+              <span className="font-semibold text-orange-600 dark:text-orange-400">连续 {streak} 天</span>
+            </div>
+          )}
+        </div>
+        <p className="text-sm text-gray-500 dark:text-gray-400 mt-0.5">纯算法·离线背单词</p>
+      </div>
+
+      {/* 今日进度环 */}
+      <div className="bg-white dark:bg-gray-800 rounded-xl card-shadow p-4 mb-4">
+        <div className="flex items-center gap-4">
+          <div className="relative w-16 h-16 shrink-0">
+            <svg viewBox="0 0 36 36" className="w-full h-full">
+              <path d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831"
+                fill="none" stroke="#e5e7eb" strokeWidth="3" />
+              <path d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831"
+                fill="none" stroke="#4F46E5" strokeWidth="3" strokeDasharray={`${Math.min(100, Math.round(todayDone.learned + todayDone.reviewed > 0 ? ((todayDone.learned + todayDone.reviewed) / (todayDone.targetNew + todayDone.targetReview)) * 100 : 0))}, 100`}
+                strokeLinecap="round" />
+            </svg>
+            <div className="absolute inset-0 flex items-center justify-center">
+              <span className="text-xs font-bold text-primary-600 dark:text-primary-400">
+                {Math.min(100, Math.round(todayDone.learned + todayDone.reviewed > 0 ? ((todayDone.learned + todayDone.reviewed) / (todayDone.targetNew + todayDone.targetReview)) * 100 : 0))}%
+              </span>
+            </div>
+          </div>
+          <div className="flex-1 min-w-0">
+            <div className="text-sm font-medium">
+              {todayDone.learned + todayDone.reviewed > 0 ? '今日已学习' : '今日尚未学习'}
+            </div>
+            <div className="text-xs text-gray-500 mt-0.5">
+              新学 {todayDone.learned} / {todayDone.targetNew} · 复习 {todayDone.reviewed} / {todayDone.targetReview}
+            </div>
+            <div className="flex gap-1 mt-1.5">
+              <span className={`inline-block px-1.5 py-0.5 rounded text-xs ${todayDone.learned + todayDone.reviewed > 0 ? 'bg-success-100 text-success-600 dark:bg-success-900/30 dark:text-success-400' : 'bg-gray-100 text-gray-400 dark:bg-gray-700'}`}>
+                {todayDone.learned + todayDone.reviewed > 0 ? '✅ 已完成' : '⏳ 待学习'}
+              </span>
+            </div>
+          </div>
+        </div>
       </div>
 
       {/* 已有学习计划 */}
