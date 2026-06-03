@@ -3,14 +3,16 @@ import { useParams, useSearchParams, useNavigate } from 'react-router-dom'
 import SpellingMode from './SpellingMode.jsx'
 import QuizMode from './QuizMode.jsx'
 import FillBlankMode from './FillBlankMode.jsx'
-import { getWordsByPlan, saveWord, getSetting, getPlan } from '../db/database.js'
+import { getWordsByPlan, getWeakWords, saveWord, getSetting, getPlan } from '../db/database.js'
 import { calculateNextReview, getTodayNewCount, calculateCurrentMemoryStrength } from '../algorithms/spaced-repetition.js'
+import { getWordWeakness } from '../db/database.js'
 import { speakWord } from '../utils/tts.js'
 
 export default function StudyView() {
   const { planId } = useParams()
   const [searchParams] = useSearchParams()
   const mode = searchParams.get('mode') || 'flip'
+  const weakMode = searchParams.get('weak') === '1'
   const navigate = useNavigate()
   
   const [words, setWords] = useState([])
@@ -30,7 +32,9 @@ export default function StudyView() {
       const autoS = await getSetting('autoSpeak')
       setAutoSpeak(autoS !== 'false')
       
-      const allWords = await getWordsByPlan(planId)
+      const allWords = weakMode
+        ? await getWeakWords(planId)
+        : await getWordsByPlan(planId)
       if (!allWords.length) { navigate('/'); return }
       
       const now = Date.now()
@@ -176,6 +180,14 @@ export default function StudyView() {
                   {current.meaning}
                 </div>
               </div>
+
+              {/* 易错标记 */}
+              {(() => {
+                const w = getWordWeakness(current)
+                if (!w.weak) return null
+                const colors = { severe: 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400', warning: 'bg-orange-100 text-orange-700 dark:bg-orange-900/30 dark:text-orange-400', mild: 'bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-400' }
+                return <div className={`text-center text-xs py-1 px-3 rounded-lg mb-2 ${colors[w.level] || colors.warning}`}>📉 易错词 — {w.reason}</div>
+              })()}
 
               <div className="space-y-3 text-sm">
                 {/* 常考搭配 */}

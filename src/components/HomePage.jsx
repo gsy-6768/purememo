@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { getAllPlans, getAllDailyStats, getWordsByPlan, getSetting, getDB } from '../db/database.js'
+import { getAllPlans, getAllDailyStats, getWordsByPlan, getSetting, getWeakWords, getDB } from '../db/database.js'
 import cet4 from '../data/cet4.json'
 import cet6 from '../data/cet6.json'
 
@@ -79,7 +79,10 @@ export default function HomePage() {
         // 今日待学习 = 复习上限内 + 新词上限内
         const todayStudy = Math.min(due.length, dailyReviewLimit) + availableNew
 
-        stats[plan.id] = { due: due.length, new: newWords.length, total: words.length, today: todayStudy, coreLearned, totalCore }
+        // 易错词
+        const weakWords = await getWeakWords(plan.id)
+
+        stats[plan.id] = { due: due.length, new: newWords.length, total: words.length, today: todayStudy, coreLearned, totalCore, weakCount: weakWords.length }
       }
       setDueStats(stats)
     } catch (e) {
@@ -299,7 +302,7 @@ export default function HomePage() {
         <div className="space-y-3 mb-6">
           <h2 className="text-sm font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wide">我的学习计划</h2>
           {plans.map(plan => {
-            const s = dueStats[plan.id] || { due: 0, new: 0, total: 0, coreLearned: 0, totalCore: 0 }
+            const s = dueStats[plan.id] || { due: 0, new: 0, total: 0, coreLearned: 0, totalCore: 0, weakCount: 0 }
             const corePct = s.totalCore > 0 ? Math.round((s.coreLearned / s.totalCore) * 100) : 0
             return (
               <div key={plan.id} className="bg-white dark:bg-gray-800 rounded-xl card-shadow p-4">
@@ -319,11 +322,20 @@ export default function HomePage() {
                     </div>
                   </div>
                 )}
-                <div className="flex gap-4 mb-3 text-sm">
+                <div className="flex gap-4 mb-2 text-sm">
                   <span className="text-success-500 font-medium">今日待学习 {s.today}</span>
                   <span className="text-danger-500">待复习 {s.due}</span>
                   <span className="text-primary-500">可学新词 {s.new}</span>
                 </div>
+                {s.weakCount > 0 && (
+                  <div className="flex items-center gap-2 mb-2 text-xs">
+                    <span className="text-danger-400">📉 易错词 {s.weakCount} 个</span>
+                    <button onClick={() => navigate(`/study/${plan.id}?mode=flip&weak=1`)}
+                      className="px-2 py-0.5 bg-danger-50 dark:bg-danger-900/20 text-danger-600 dark:text-danger-400 rounded border border-danger-200 dark:border-danger-800 hover:bg-danger-100 btn-press">
+                      复习易错词
+                    </button>
+                  </div>
+                )}
                 <div className="flex gap-2">
                   <button
                     onClick={() => s.today > 0 && setModePicker({ planId: plan.id })}

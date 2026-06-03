@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react'
-import { getAllPlans, getWordsByPlan, saveWord, getDB, deletePlan } from '../db/database.js'
+import { getAllPlans, getWordsByPlan, getWeakWords, saveWord, getDB, deletePlan } from '../db/database.js'
 
 export default function WordLibrary() {
   const [plans, setPlans] = useState([])
@@ -131,7 +131,8 @@ export default function WordLibrary() {
   const filtered = filter === 'all' ? words :
     filter === 'mastered' ? words.filter(w => w.memoryStrength >= 0.7) :
     filter === 'learning' ? words.filter(w => w.nextReviewTime && w.memoryStrength < 0.7) :
-    words.filter(w => !w.nextReviewTime)
+    filter === 'new' ? words.filter(w => !w.nextReviewTime) :
+    words.filter(w => (w.reviewHistory || []).filter(r => r.rating === 'forgot').length >= 2)
 
   return (
     <div className="pb-20 px-4 max-w-lg mx-auto">
@@ -180,11 +181,13 @@ export default function WordLibrary() {
 
           {/* 过滤 */}
           <div className="flex gap-2 text-xs mb-3">
-            {[
+            const weakCount = words.filter(w => (w.reviewHistory || []).filter(r => r.rating === 'forgot').length >= 2).length
+          {[
               { key: 'all', label: `全部 (${words.length})` },
               { key: 'new', label: `未学 (${words.filter(w => !w.nextReviewTime).length})` },
               { key: 'learning', label: `学习中 (${words.filter(w => w.nextReviewTime && w.memoryStrength < 0.7).length})` },
-              { key: 'mastered', label: `已掌握 (${words.filter(w => w.memoryStrength >= 0.7).length})` }
+              { key: 'mastered', label: `已掌握 (${words.filter(w => w.memoryStrength >= 0.7).length})` },
+              ...(weakCount > 0 ? [{ key: 'weak', label: `📉 易错词 (${weakCount})` }] : [])
             ].map(f => (
               <button key={f.key} onClick={() => setFilter(f.key)}
                 className={`px-2 py-1 rounded ${filter === f.key ? 'bg-primary-100 dark:bg-primary-900/30 text-primary-700 dark:text-primary-300' : 'text-gray-500'}`}

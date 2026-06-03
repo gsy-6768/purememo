@@ -147,6 +147,70 @@ export async function getNewWords(planId, limit) {
   return newWords.slice(0, limit);
 }
 
+// ==================== 易错词 ====================
+
+/**
+ * 获取易错词列表 — 基于 reviewHistory 判断
+ * 条件：连续忘记≥2次 或 忘记+模糊占比≥40% 或 最近3次中≥2次忘记
+ */
+export async function getWeakWords(planId) {
+  const d = await getDB();
+  const all = await d.getAllFromIndex('words', 'planId', planId);
+  
+  return all.filter(w => {
+    const history = w.reviewHistory || [];
+    if (history.length < 2) return false;
+    
+    const recent = history.slice(-5);
+    const forgotCount = recent.filter(r => r.rating === 'forgot').length;
+    const hazyCount = recent.filter(r => r.rating === 'hazy').length;
+    const totalRecent = recent.length;
+    
+    // 条件1: 连续忘记 ≥ 2 次
+    let consecutiveForgot = 0;
+    for (let i = recent.length - 1; i >= 0; i--) {
+      if (recent[i].rating === 'forgot') consecutiveForgot++;
+      else break;
+    }
+    if (consecutiveForgot >= 2) return true;
+    
+    // 条件2: 最近忘记 + 模糊占比 ≥ 40%
+    if ((forgotCount + hazyCount) / totalRecent >= 0.4) return true;
+    
+    // 条件3: 最近 3 次中 ≥ 2 次忘记
+    const last3 = recent.slice(-3);
+    if (last3.length >= 2 && last3.filter(r => r.rating === 'forgot').length >= 2) return true;
+    
+    return false;
+  });
+}
+
+/**
+ * 获取单词的易错标签
+ */
+export function getWordWeakness(word) {
+  const history = word.reviewHistory || [];
+  if (history.length < 2) return { weak: false, level: 'none', reason: '' };
+  
+  const recent = history.slice(-5);
+  const forgot = recent.filter(r => r.rating === 'forgot').length;
+  const hazy = recent.filter(r => r.rating === 'hazy').length;
+  const total = recent.length;
+  
+  let consecutiveForgot = 0;
+  for (let i = recent.length - 1; i >= 0; i--) {
+    if (recent[i].rating === 'forgot') consecutiveForgot++;
+    else break;
+  }
+  
+  if (consecutiveForgot >= 3) return { weak: true, level: 'severe', reason: '连续 3 次忘记' };
+  if (consecutiveForgot >= 2) return { weak: true, level: 'warning', reason: '连续 2 次忘记' };
+  if (total >= 3 && forgot >= 2) return { weak: true, level: 'warning', reason: '最近多次忘记' };
+  if ((forgot + hazy) / total >= 0.4) return { weak: true, level: 'mild', reason: '正确率偏低' };
+  
+  return { weak: false, level: 'none', reason: '' };
+}
+
 // ==================== 每日统计 ====================
 
 export async function getDailyStat(date) {
