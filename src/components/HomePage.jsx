@@ -60,14 +60,13 @@ export default function HomePage() {
         const newWords = words.filter(w => !w.nextReviewTime && !w.isPaused)
         const learned = words.filter(w => w.lastReviewTime)
 
-        // 核心词掌握进度 (从词库数据获取 frequencyTier)
+        // 核心词掌握进度（懒加载词库数据）
         const libName = plan.name === '大学英语四级' ? 'cet4' : plan.name === '大学英语六级' ? 'cet6' : ''
-        let coreWords = [], totalCore = 0
-        if (libName === 'cet4') {
-          coreWords = cet4.filter(w => w.frequencyTier === 'core')
-          totalCore = coreWords.length
-        } else if (libName === 'cet6') {
-          coreWords = cet6.filter(w => w.frequencyTier === 'core')
+        let totalCore = 0
+        let coreWords = []
+        if (libName) {
+          const data = await import(`../data/${libName}.json`).then(m => m.default)
+          coreWords = data.filter(w => w.frequencyTier === 'core')
           totalCore = coreWords.length
         }
         // 已学的核心词
