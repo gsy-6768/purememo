@@ -19,12 +19,8 @@ export default function HomePage() {
     setLoading(true)
     try {
       // 确保内置词库已导入（带版本检测，避免每次重复处理）
-      const dataVersion = await getSetting('dataVersion')
-      if (dataVersion !== 'v2') {
-        await ensureBuiltinLibraries()
-        await setSetting('dataVersion', 'v2')
-      }
-      
+      // 确保内置词库已导入
+      await ensureBuiltinLibraries()
       const p = await getAllPlans()
       setPlans(p)
       
