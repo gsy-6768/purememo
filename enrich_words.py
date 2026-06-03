@@ -1525,6 +1525,30 @@ def get_mnemonic(word):
 
 
 # ============================================================
+# 6a. Derive Chinese translation for a collocation phrase
+# ============================================================
+
+def _derive_cn_for_phrase(phrase, cn_example, cn_root, word):
+    """从例句中文翻译中提取短语的中文对应"""
+    # Try to find the word's Chinese meaning in the Chinese translation
+    if not cn_root or cn_root == word:
+        return ""
+    
+    # Search for the Chinese root in the Chinese example
+    idx = cn_example.find(cn_root)
+    if idx >= 0:
+        # Extract a reasonable Chinese phrase (usually 2-4 chars around the root)
+        start = max(0, idx - 2)
+        end = min(len(cn_example), idx + len(cn_root) + 4)
+        # Try to get just the meaningful part
+        cn_phrase = cn_example[start:end].strip('，。！？、；：""''（）')
+        return cn_phrase
+    
+    # Fallback: just return the word's Chinese root
+    return cn_root
+
+
+# ============================================================
 # 6. Main enrichment function
 # ============================================================
 
@@ -1536,20 +1560,31 @@ def enrich_word(word_data, use_api=True):
     # 1. Frequency tier
     enriched["frequencyTier"] = get_frequency_tier(word, word_data.get("meaning", ""))
     
-    # 2. Collocations - extract from existing example
+    # 2. Collocations - extract from existing example with Chinese
     collocations = []
     example = word_data.get("example", "")
     if example and " — " in example:
         eng_part = example.split(" — ")[0].strip()
-        # Extract key collocation (verb+noun or adj+noun)
+        cn_part = example.split(" — ")[1].strip()
+        # Extract word's Chinese meaning root from the meaning field
+        meaning_cn = word_data.get("meaning", "").split(" ")[-1] if " " in word_data.get("meaning", "") else ""
+        # Remove leading pos like "v." "n." "adj."
+        cn_root = meaning_cn.lstrip("adv.v.n.adj.prep.conj.pron.") if meaning_cn else word
+        
         words_in_example = eng_part.replace(".", "").replace(",", "").replace("!", "").replace("?", "").split()
         if len(words_in_example) >= 3:
             for i, w in enumerate(words_in_example):
                 if w.lower() == word.lower() and i + 1 < len(words_in_example):
-                    collocations.append(f"{word} {words_in_example[i+1].lower().strip(',.!?')}")
+                    phrase = f"{word} {words_in_example[i+1].lower().strip(',.!?')}"
+                    # Try to derive Chinese for this phrase
+                    # Strategy: if the eng phrase is "verb noun", the cn likely contains "verb-cn noun-cn"
+                    cn_trans = _derive_cn_for_phrase(phrase, cn_part, cn_root, word)
+                    collocations.append(f"{phrase} — {cn_trans}" if cn_trans else phrase)
                     break
                 if w.lower().strip(',.!?') == word.lower() and i > 0:
-                    collocations.append(f"{words_in_example[i-1].lower().strip(',.!?')} {word}")
+                    phrase = f"{words_in_example[i-1].lower().strip(',.!?')} {word}"
+                    cn_trans = _derive_cn_for_phrase(phrase, cn_part, cn_root, word)
+                    collocations.append(f"{phrase} — {cn_trans}" if cn_trans else phrase)
                     break
     
     enriched["collocations"] = collocations[:5]

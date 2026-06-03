@@ -180,12 +180,19 @@ export default function StudyView() {
                 {current.collocations && current.collocations.length > 0 && (
                   <div className="bg-blue-50 dark:bg-blue-900/20 rounded-lg p-3">
                     <div className="text-xs font-semibold text-blue-600 dark:text-blue-400 mb-1.5">📎 常考搭配</div>
-                    <div className="flex flex-wrap gap-1.5">
-                      {current.collocations.map((c, i) => (
-                        <span key={i} className="px-2 py-0.5 bg-white dark:bg-gray-700 rounded text-xs text-gray-700 dark:text-gray-300 border border-blue-100 dark:border-blue-800">
-                          {c}
-                        </span>
-                      ))}
+                    <div className="flex flex-col gap-1.5">
+                      {current.collocations.map((c, i) => {
+                        // 支持 "en — cn" 格式
+                        const hasCn = c.includes(' — ')
+                        const en = hasCn ? c.split(' — ')[0] : c
+                        const cn = hasCn ? c.split(' — ')[1] : ''
+                        return (
+                          <div key={i} className="flex items-baseline gap-2 px-2.5 py-1.5 bg-white dark:bg-gray-700 rounded text-xs border border-blue-100 dark:border-blue-800">
+                            <span className="font-medium text-gray-800 dark:text-gray-200">{en}</span>
+                            {cn && <span className="text-gray-500 dark:text-gray-400">— {cn}</span>}
+                          </div>
+                        )
+                      })}
                     </div>
                   </div>
                 )}
