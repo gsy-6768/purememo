@@ -1,11 +1,16 @@
 import React, { useState, useEffect, useCallback } from 'react'
-import { useParams, useNavigate } from 'react-router-dom'
+import { useParams, useSearchParams, useNavigate } from 'react-router-dom'
+import SpellingMode from './SpellingMode.jsx'
+import QuizMode from './QuizMode.jsx'
+import FillBlankMode from './FillBlankMode.jsx'
 import { getWordsByPlan, saveWord, getSetting, getPlan } from '../db/database.js'
 import { calculateNextReview, getTodayNewCount, calculateCurrentMemoryStrength } from '../algorithms/spaced-repetition.js'
 import { speakWord } from '../utils/tts.js'
 
 export default function StudyView() {
   const { planId } = useParams()
+  const [searchParams] = useSearchParams()
+  const mode = searchParams.get('mode') || 'flip'
   const navigate = useNavigate()
   
   const [words, setWords] = useState([])
@@ -98,8 +103,9 @@ export default function StudyView() {
     }
   }, [current, index, words, planId, navigate, sessionStats])
 
-  // 键盘快捷键
+  // 键盘快捷键（仅翻卡模式）
   useEffect(() => {
+    if (mode !== 'flip') return
     const handler = (e) => {
       if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') return
       if (e.key === ' ' || e.key === 'Enter') { e.preventDefault(); setFlipped(f => !f) }
@@ -111,7 +117,7 @@ export default function StudyView() {
     }
     window.addEventListener('keydown', handler)
     return () => window.removeEventListener('keydown', handler)
-  }, [flipped, handleFeedback])
+  }, [flipped, handleFeedback, mode])
 
   // 自动发音
   useEffect(() => {
@@ -144,7 +150,10 @@ export default function StudyView() {
         <div className="bg-primary-500 h-1.5 rounded-full progress-fill" style={{ width: `${progress}%` }}></div>
       </div>
 
-      {/* 卡片 */}
+      {/* 内容区：根据模式渲染 */}
+      {mode === 'flip' ? (
+        <>
+      {/* 翻卡模式 */}
       <div className="flex-1 flex items-center justify-center" onClick={() => !flipped && setFlipped(true)}>
         <div key={index} className="w-full max-w-sm aspect-[3/4] perspective cursor-pointer">
           <div className={`card-inner ${flipped ? 'flipped' : ''}`}>
@@ -305,6 +314,15 @@ export default function StudyView() {
           </button>
         </div>
       </div>
+      <div className="text-center text-xs text-gray-400 mt-2">点击卡片空白区翻转</div>
+        </>
+      ) : mode === 'spell' ? (
+        <SpellingMode word={current} onComplete={handleFeedback} />
+      ) : mode === 'quiz' ? (
+        <QuizMode word={current} allWords={words} onComplete={handleFeedback} />
+      ) : mode === 'fill' ? (
+        <FillBlankMode word={current} onComplete={handleFeedback} />
+      ) : null}
     </div>
   )
 }
