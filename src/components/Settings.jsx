@@ -43,12 +43,25 @@ export default function Settings({ darkMode, toggleDark, fontSize, setFontSize }
           <div className="space-y-4">
             <div>
               <label className="text-sm text-gray-500 block mb-1">每日新学单词上限</label>
+              {/* 快捷按钮 */}
+              <div className="flex gap-1.5 mb-2">
+                {[20, 50, 100, 200].map(n => (
+                  <button key={n} onClick={() => updateSetting('dailyNewLimit', n)}
+                    className={`flex-1 py-1.5 rounded text-xs font-medium btn-press ${
+                      settings.dailyNewLimit === n ? 'bg-primary-600 text-white' : 'bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-400'
+                    }`}
+                  >{n} 词</button>
+                ))}
+              </div>
               <div className="flex items-center gap-3">
                 <input type="range" min="5" max="5000" step="5"
                   value={settings.dailyNewLimit}
                   onChange={e => updateSetting('dailyNewLimit', parseInt(e.target.value))}
                   className="flex-1 accent-primary-600" />
-                <span className="font-semibold w-12 text-center">{settings.dailyNewLimit}</span>
+                <input type="number" min="5" max="5000"
+                  value={settings.dailyNewLimit}
+                  onChange={e => updateSetting('dailyNewLimit', Math.max(5, parseInt(e.target.value) || 5))}
+                  className="w-16 text-center font-semibold py-1 border border-gray-200 dark:border-gray-600 rounded bg-transparent dark:text-white text-sm" />
               </div>
             </div>
             <div>

@@ -45,17 +45,14 @@ export default function StudyView() {
       
       const alreadyLearned = allWords.filter(w => w.learnedDate && w.learnedDate >= new Date().setHours(0,0,0,0))
       const canLearnNew = Math.max(0, dailyNewLimit - alreadyLearned.length)
-      const availableNew = newWords.slice(0, canLearnNew)
+      // 新词先打乱再截取，确保每次都是随机顺序
+      const shuffledNewWords = [...newWords].sort(() => Math.random() - 0.5)
+      const availableNew = shuffledNewWords.slice(0, canLearnNew)
       
       // 复习限制
       const limitedDue = dueWords.slice(0, dailyReviewLimit)
       
-      // 合并：复习优先，然后新词
-      const studyList = [...limitedDue, ...availableNew]
-      
-      // 打乱顺序 - 复习词按到期时间排序，新词打乱
-      const shuffledNew = availableNew.sort(() => Math.random() - 0.5)
-      const finalList = [...limitedDue, ...shuffledNew]
+      const finalList = [...limitedDue, ...availableNew]
       
       setWords(finalList)
       setTotalCount(finalList.length)
@@ -160,13 +157,9 @@ export default function StudyView() {
             {/* 正面：单词 */}
             <div className="card-face bg-white dark:bg-gray-800 card-shadow flex flex-col items-center justify-center p-8">
               <h2 className="text-3xl font-bold mb-3 text-center">{current.word}</h2>
-              <div className="flex items-center gap-2 mb-2">
-                <span className="text-sm text-gray-400">英 /{current.phonetic_uk}/</span>
-                <button onClick={(e) => { e.stopPropagation(); speakWord(current.word, 'uk') }} className="text-gray-400 hover:text-primary-500 text-lg">🔊</button>
-              </div>
-              <div className="flex items-center gap-2">
-                <span className="text-sm text-gray-400">美 /{current.phonetic_us}/</span>
-                <button onClick={(e) => { e.stopPropagation(); speakWord(current.word, 'us') }} className="text-gray-400 hover:text-primary-500 text-lg">🔊</button>
+              <div className="flex items-center justify-center gap-2 mb-2">
+                <span className="text-sm text-gray-400">/{current.phonetic_uk}/  /{current.phonetic_us}/</span>
+                <button onClick={(e) => { e.stopPropagation(); speakWord(current.word, 'us') }} className="text-gray-400 hover:text-primary-500 text-lg" title="发音">🔊</button>
               </div>
               <p className="text-xs text-gray-300 mt-6">点击卡片或按空格键翻转</p>
             </div>
