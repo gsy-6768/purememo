@@ -181,8 +181,9 @@ export default function WordLibrary() {
 
           {/* 过滤 */}
           <div className="flex gap-2 text-xs mb-3">
+          {(() => {
             const weakCount = words.filter(w => (w.reviewHistory || []).filter(r => r.rating === 'forgot').length >= 2).length
-          {[
+            return [
               { key: 'all', label: `全部 (${words.length})` },
               { key: 'new', label: `未学 (${words.filter(w => !w.nextReviewTime).length})` },
               { key: 'learning', label: `学习中 (${words.filter(w => w.nextReviewTime && w.memoryStrength < 0.7).length})` },
@@ -192,7 +193,8 @@ export default function WordLibrary() {
               <button key={f.key} onClick={() => setFilter(f.key)}
                 className={`px-2 py-1 rounded ${filter === f.key ? 'bg-primary-100 dark:bg-primary-900/30 text-primary-700 dark:text-primary-300' : 'text-gray-500'}`}
               >{f.label}</button>
-            ))}
+            ))
+          })()}
           </div>
 
           {/* 单词列表 */}
