@@ -146,7 +146,7 @@ export default function StudyView() {
 
       {/* 卡片 */}
       <div className="flex-1 flex items-center justify-center" onClick={() => !flipped && setFlipped(true)}>
-        <div className="w-full max-w-sm aspect-[3/4] perspective cursor-pointer">
+        <div key={index} className="w-full max-w-sm aspect-[3/4] perspective cursor-pointer">
           <div className={`card-inner ${flipped ? 'flipped' : ''}`}>
             {/* 正面：单词 */}
             <div className="card-face bg-white dark:bg-gray-800 card-shadow flex flex-col items-center justify-center p-8">
