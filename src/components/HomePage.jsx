@@ -94,15 +94,31 @@ export default function HomePage() {
         
         for (const w of lib.words) {
           const existing = existingByWord.get(w.word)
+          // 丰富内容字段（从 JSON 同步到 IndexedDB）
+          const enrichedFields = {
+            frequencyTier: w.frequencyTier || 'common',
+            collocations: w.collocations || [],
+            root: w.root || null,
+            mnemonic: w.mnemonic || '',
+            synonyms: w.synonyms || [],
+            antonyms: w.antonyms || [],
+            extraExamples: w.extraExamples || [],
+            relatedWords: w.relatedWords || [],
+          }
           if (existing) {
-            // 更新已有单词的释义/音标/例句（保留学习进度）
-            if (existing.meaning !== (w.meaning || '') ||
-                existing.example !== (w.example || '') ||
-                existing.phonetic_uk !== (w.phonetic_uk || '') ||
-                existing.phonetic_us !== (w.phonetic_us || '') ||
-                existing.pos !== (w.pos || '')) {
+            // 检查是否有变化（基础字段变化，或缺少丰富字段）
+            const needsUpdate =
+              existing.meaning !== (w.meaning || '') ||
+              existing.example !== (w.example || '') ||
+              existing.phonetic_uk !== (w.phonetic_uk || '') ||
+              existing.phonetic_us !== (w.phonetic_us || '') ||
+              existing.pos !== (w.pos || '') ||
+              !existing.frequencyTier ||  // 旧数据没有丰富字段，强制同步
+              existing.frequencyTier !== enrichedFields.frequencyTier
+            if (needsUpdate) {
               await tx.store.put({
                 ...existing,
+                ...enrichedFields,
                 phonetic_uk: w.phonetic_uk || '',
                 phonetic_us: w.phonetic_us || '',
                 pos: w.pos || '',
@@ -112,7 +128,7 @@ export default function HomePage() {
               updated++
             }
           } else {
-            // 添加新单词
+            // 添加新单词（含丰富字段）
             await tx.store.put({
               id: `${plan.id}_${w.word}`,
               planId: plan.id,
@@ -122,6 +138,7 @@ export default function HomePage() {
               pos: w.pos || '',
               meaning: w.meaning || '',
               example: w.example || '',
+              ...enrichedFields,
               isPaused: false,
               ef: 2.5, interval: 0, repetitions: 0,
               memoryStrength: 0, totalReviews: 0,
@@ -158,7 +175,7 @@ export default function HomePage() {
     }
     await d.put('plans', plan)
     
-    // 为词库中每个单词创建学习记录
+    // 为词库中每个单词创建学习记录（含丰富字段）
     const words = lib.words.map(w => ({
       id: `${planId}_${w.word}`,
       planId: planId,
@@ -168,6 +185,14 @@ export default function HomePage() {
       pos: w.pos || '',
       meaning: w.meaning || '',
       example: w.example || '',
+      frequencyTier: w.frequencyTier || 'common',
+      collocations: w.collocations || [],
+      root: w.root || null,
+      mnemonic: w.mnemonic || '',
+      synonyms: w.synonyms || [],
+      antonyms: w.antonyms || [],
+      extraExamples: w.extraExamples || [],
+      relatedWords: w.relatedWords || [],
       isPaused: false,
       ef: 2.5,
       interval: 0,
