@@ -53,6 +53,10 @@
 /* 进度条动画 */
 .progress-fill { transition: width 0.5s ease; }
 
+/* 隐藏滚动条 */
+.scrollbar-hide::-webkit-scrollbar { display: none; }
+.scrollbar-hide { -ms-overflow-style: none; scrollbar-width: none; }
+
 /* 底部弹出面板 */
 @keyframes slide-up {
   from { transform: translateY(100%); }

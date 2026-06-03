@@ -18,8 +18,12 @@ export default function HomePage() {
   async function loadData() {
     setLoading(true)
     try {
-      // 确保内置词库已导入
-      await ensureBuiltinLibraries()
+      // 确保内置词库已导入（带版本检测，避免每次重复处理）
+      const dataVersion = await getSetting('dataVersion')
+      if (dataVersion !== 'v2') {
+        await ensureBuiltinLibraries()
+        await setSetting('dataVersion', 'v2')
+      }
       
       const p = await getAllPlans()
       setPlans(p)
@@ -79,12 +83,20 @@ export default function HomePage() {
         // 今日待学习 = 复习上限内 + 新词上限内
         const todayStudy = Math.min(due.length, dailyReviewLimit) + availableNew
 
-        // 易错词
-        const weakWords = await getWeakWords(plan.id)
-
-        stats[plan.id] = { due: due.length, new: newWords.length, total: words.length, today: todayStudy, coreLearned, totalCore, weakCount: weakWords.length }
+        stats[plan.id] = { due: due.length, new: newWords.length, total: words.length, today: todayStudy, coreLearned, totalCore }
       }
+      
       setDueStats(stats)
+      
+      // 易错词（延迟计算，避免阻塞首页渲染）
+      setTimeout(async () => {
+        const updated = { ...stats }
+        for (const plan of p) {
+          const weakWords = await getWeakWords(plan.id)
+          updated[plan.id] = { ...updated[plan.id], weakCount: weakWords.length }
+        }
+        setDueStats(updated)
+      }, 100)
     } catch (e) {
       console.error(e)
     }
@@ -143,7 +155,7 @@ export default function HomePage() {
               !existing.frequencyTier ||  // 旧数据没有丰富字段，强制同步
               existing.frequencyTier !== enrichedFields.frequencyTier
             if (needsUpdate) {
-              await tx.store.put({
+              tx.store.put({
                 ...existing,
                 ...enrichedFields,
                 phonetic_uk: w.phonetic_uk || '',
@@ -233,9 +245,12 @@ export default function HomePage() {
       reviewHistory: []
     }))
     
+    // 批量写入，减少 async 开销
     const tx = d.transaction('words', 'readwrite')
-    for (const w of words) {
-      await tx.store.put(w)
+    const store = tx.store
+    for (let i = 0; i < words.length; i += 200) {
+      const batch = words.slice(i, i + 200)
+      for (const w of batch) store.put(w)
     }
     await tx.done
     
