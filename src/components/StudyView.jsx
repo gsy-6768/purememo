@@ -6,7 +6,7 @@ import FillBlankMode from './FillBlankMode.jsx'
 import { getWordsByPlan, getWeakWords, saveWord, getSetting, getPlan } from '../db/database.js'
 import { calculateNextReview, getTodayNewCount, calculateCurrentMemoryStrength } from '../algorithms/spaced-repetition.js'
 import { getWordWeakness } from '../db/database.js'
-import { speakWord } from '../utils/tts.js'
+import { speakWord, speakSentence } from '../utils/tts.js'
 
 export default function StudyView() {
   const { planId } = useParams()
@@ -270,7 +270,11 @@ export default function StudyView() {
                 {/* 例句 */}
                 {current.example && (
                   <div className="bg-gray-50 dark:bg-gray-700/30 rounded-lg p-3">
-                    <div className="text-xs font-semibold text-gray-500 dark:text-gray-400 mb-1">📖 例句</div>
+                    <div className="flex items-center justify-between mb-1">
+                      <div className="text-xs font-semibold text-gray-500 dark:text-gray-400">📖 例句</div>
+                      <button onClick={(e) => { e.stopPropagation(); speakSentence(current.example) }}
+                        className="text-gray-400 hover:text-primary-500 text-xs btn-press">🔊</button>
+                    </div>
                     <div className="text-xs text-gray-600 dark:text-gray-400 italic leading-relaxed">
                       "{current.example.split(' — ')[0]}"
                     </div>

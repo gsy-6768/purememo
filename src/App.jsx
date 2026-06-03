@@ -1,16 +1,19 @@
-import React, { useState, useEffect } from 'react'
+import React, { useState, useEffect, Suspense, lazy } from 'react'
 import { Routes, Route, useLocation, useNavigate } from 'react-router-dom'
 import NavBar from './components/NavBar.jsx'
-import StudyView from './components/StudyView.jsx'
-import StudyComplete from './components/StudyComplete.jsx'
-import WordLibrary from './components/WordLibrary.jsx'
-import RootExplorer from './components/RootExplorer.jsx'
-import Achievements from './components/Achievements.jsx'
-import ReadingView from './components/ReadingView.jsx'
-import Statistics from './components/Statistics.jsx'
-import Settings from './components/Settings.jsx'
-import HomePage from './components/HomePage.jsx'
+import { PageSkeleton } from './components/Skeleton.jsx'
 import { getSetting, setSetting } from './db/database.js'
+
+const StudyView = lazy(() => import('./components/StudyView.jsx'))
+const StudyComplete = lazy(() => import('./components/StudyComplete.jsx'))
+const WordLibrary = lazy(() => import('./components/WordLibrary.jsx'))
+const RootExplorer = lazy(() => import('./components/RootExplorer.jsx'))
+const Achievements = lazy(() => import('./components/Achievements.jsx'))
+const ReadingView = lazy(() => import('./components/ReadingView.jsx'))
+const GlobalSearch = lazy(() => import('./components/GlobalSearch.jsx'))
+const Statistics = lazy(() => import('./components/Statistics.jsx'))
+const Settings = lazy(() => import('./components/Settings.jsx'))
+const HomePage = lazy(() => import('./components/HomePage.jsx'))
 
 export default function App() {
   const [darkMode, setDarkMode] = useState(false)
@@ -59,19 +62,22 @@ export default function App() {
 
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900 text-gray-900 dark:text-gray-100 transition-colors">
-      <Routes>
-        <Route path="/" element={<HomePage />} />
-        <Route path="/study/:planId" element={<StudyView />} />
-        <Route path="/complete/:planId" element={<StudyComplete />} />
-        <Route path="/library" element={<WordLibrary />} />
-        <Route path="/roots" element={<RootExplorer />} />
-        <Route path="/achievements" element={<Achievements />} />
-        <Route path="/reading" element={<ReadingView />} />
-        <Route path="/stats" element={<Statistics />} />
-        <Route path="/settings" element={
-          <Settings darkMode={darkMode} toggleDark={toggleDark} fontSize={fontSize} setFontSize={updateFontSize} />
-        } />
-      </Routes>
+      <Suspense fallback={<PageSkeleton />}>
+        <Routes>
+          <Route path="/" element={<HomePage />} />
+          <Route path="/study/:planId" element={<StudyView />} />
+          <Route path="/complete/:planId" element={<StudyComplete />} />
+          <Route path="/library" element={<WordLibrary />} />
+          <Route path="/roots" element={<RootExplorer />} />
+          <Route path="/achievements" element={<Achievements />} />
+          <Route path="/reading" element={<ReadingView />} />
+          <Route path="/search" element={<GlobalSearch />} />
+          <Route path="/stats" element={<Statistics />} />
+          <Route path="/settings" element={
+            <Settings darkMode={darkMode} toggleDark={toggleDark} fontSize={fontSize} setFontSize={updateFontSize} />
+          } />
+        </Routes>
+      </Suspense>
       {!hideNav && <NavBar />}
     </div>
   )

@@ -25,11 +25,13 @@ export default function Settings({ darkMode, toggleDark, fontSize, setFontSize }
       const dailyReviewLimit = await getSetting('dailyReviewLimit') || '100'
       const autoSpeak = await getSetting('autoSpeak')
       const newOrder = await getSetting('newOrder') || 'mixed'
+      const ttsSpeed = parseFloat(await getSetting('ttsSpeed')) || 0.85
       setSettings({
         dailyNewLimit: parseInt(dailyNewLimit),
         dailyReviewLimit: parseInt(dailyReviewLimit),
         autoSpeak: autoSpeak !== 'false',
-        newOrder
+        newOrder,
+        ttsSpeed
       })
       
       // 加载算法参数
@@ -97,13 +99,25 @@ export default function Settings({ darkMode, toggleDark, fontSize, setFontSize }
 
         {/* 发音 */}
         <div className="bg-white dark:bg-gray-800 rounded-xl card-shadow p-4">
-          <h2 className="font-semibold mb-4">发音</h2>
-          <div className="flex items-center justify-between">
+          <h2 className="font-semibold mb-4">🔊 发音</h2>
+          <div className="flex items-center justify-between mb-3">
             <span className="text-sm">自动发音</span>
             <button onClick={() => updateSetting('autoSpeak', !settings.autoSpeak)}
               className={`w-12 h-6 rounded-full transition-colors ${settings.autoSpeak ? 'bg-primary-600' : 'bg-gray-300 dark:bg-gray-600'}`}>
               <div className={`w-5 h-5 bg-white rounded-full transition-transform ${settings.autoSpeak ? 'translate-x-6.5' : 'translate-x-0.5'}`}></div>
             </button>
+          </div>
+          <div>
+            <label className="text-sm text-gray-500 block mb-1">朗读语速</label>
+            <div className="flex items-center gap-3">
+              <span className="text-xs text-gray-400">慢</span>
+              <input type="range" min="0.3" max="1.8" step="0.1"
+                value={settings.ttsSpeed || 0.85}
+                onChange={e => updateSetting('ttsSpeed', parseFloat(e.target.value))}
+                className="flex-1 accent-primary-600" />
+              <span className="text-xs text-gray-400">快</span>
+              <span className="font-semibold w-10 text-center text-xs">{settings.ttsSpeed || 0.85}x</span>
+            </div>
           </div>
         </div>
 

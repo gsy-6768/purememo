@@ -1,8 +1,7 @@
 import React, { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { getAllPlans, getAllDailyStats, getWordsByPlan, getSetting, getWeakWords, getDB } from '../db/database.js'
-import cet4 from '../data/cet4.json'
-import cet6 from '../data/cet6.json'
+// cet4/cet6 loaded lazily to reduce bundle size
 
 export default function HomePage() {
   const [plans, setPlans] = useState([])
@@ -109,6 +108,11 @@ export default function HomePage() {
       { id: 'cet6', name: '大学英语六级', words: cet6 }
     ]
     
+    // 懒加载词库数据
+    const [cet4, cet6] = await Promise.all([
+      import('../data/cet4.json').then(m => m.default),
+      import('../data/cet6.json').then(m => m.default),
+    ])
     for (const lib of builtins) {
       const oldLib = existingLibs.get(lib.id)
       const newLib = { id: lib.id, name: lib.name, words: lib.words }
@@ -416,12 +420,12 @@ export default function HomePage() {
           <button onClick={() => createPlan('cet4')} className="p-3 border border-gray-200 dark:border-gray-700 rounded-lg text-center hover:bg-primary-50 dark:hover:bg-primary-900/20 btn-press">
             <span className="text-xl block mb-1">📘</span>
             <span className="text-sm font-medium">四级词汇</span>
-            <span className="text-xs text-gray-400 block">{cet4.length} 词</span>
+            <span className="text-xs text-gray-400 block">4544 词</span>
           </button>
           <button onClick={() => createPlan('cet6')} className="p-3 border border-gray-200 dark:border-gray-700 rounded-lg text-center hover:bg-primary-50 dark:hover:bg-primary-900/20 btn-press">
             <span className="text-xl block mb-1">📕</span>
             <span className="text-sm font-medium">六级词汇</span>
-            <span className="text-xs text-gray-400 block">{cet6.length} 词</span>
+            <span className="text-xs text-gray-400 block">3991 词</span>
           </button>
         </div>
       </div>
