@@ -329,7 +329,7 @@ export default function HomePage() {
         <div className="space-y-3 mb-6">
           <h2 className="text-sm font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wide">我的学习计划</h2>
           {plans.map(plan => {
-            const s = dueStats[plan.id] || { due: 0, new: 0, total: 0, coreLearned: 0, totalCore: 0, weakCount: 0 }
+            const s = dueStats[plan.id] || { due: 0, new: 0, total: 0, today: 0, coreLearned: 0, totalCore: 0, weakCount: 0 }
             const corePct = s.totalCore > 0 ? Math.round((s.coreLearned / s.totalCore) * 100) : 0
             return (
               <div key={plan.id} className="bg-white dark:bg-gray-800 rounded-xl card-shadow p-4">
