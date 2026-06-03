@@ -250,18 +250,39 @@ ROOT_DB = {
             "related": []},
     "ify": {"root": "ify", "origin": "拉丁语 (动词后缀)", "meaning": "使…化",
             "related": []},
-    "ly": {"root": "ly", "origin": "古英语 (副词后缀)", "meaning": "…地",
-           "related": []},
-    "er": {"root": "er/or", "origin": "古英语 (施动者)", "meaning": "做…的人/物",
-           "related": []},
-    "or": {"root": "er/or", "origin": "拉丁语 (施动者)", "meaning": "做…的人/物",
-           "related": []},
     "ist": {"root": "ist", "origin": "希腊语 (人后缀)", "meaning": "…主义者/…家",
             "related": []},
     "ism": {"root": "ism", "origin": "希腊语 (主义后缀)", "meaning": "…主义/…学说",
             "related": []},
     "logy": {"root": "logy", "origin": "希腊语 (学科后缀)", "meaning": "…学",
              "related": []},
+    # Additional important roots
+    "ven": {"root": "ven/vent", "origin": "拉丁语 venire (来)", "meaning": "来，到达",
+            "related": ["adventure", "event", "prevent", "invent", "convenient"]},
+    "vent": {"root": "ven/vent", "origin": "拉丁语 venire (来)", "meaning": "来，到达",
+             "related": ["adventure", "event", "prevent", "invent", "convenient"]},
+    "fer": {"root": "fer", "origin": "拉丁语 ferre (携带/带来)", "meaning": "携带，带来",
+            "related": ["transfer", "refer", "conference", "differ", "offer", "prefer"]},
+    "voc": {"root": "voc/vok", "origin": "拉丁语 vocare (叫喊)", "meaning": "声音，叫喊",
+            "related": ["vocal", "advocate", "provoke", "evoke", "vocabulary"]},
+    "vok": {"root": "voc/vok", "origin": "拉丁语 vocare (叫喊)", "meaning": "声音，叫喊",
+            "related": ["vocal", "advocate", "provoke", "evoke", "vocabulary"]},
+    "vert": {"root": "vert/vers", "origin": "拉丁语 vertere (转)", "meaning": "转动，转变",
+             "related": ["convert", "reverse", "diverse", "anniversary", "advertise"]},
+    "vers": {"root": "vert/vers", "origin": "拉丁语 vertere (转)", "meaning": "转动，转变",
+             "related": ["convert", "reverse", "diverse", "anniversary", "advertise"]},
+    "curr": {"root": "curr/curs", "origin": "拉丁语 currere (跑)", "meaning": "跑，流动",
+             "related": ["current", "occur", "curriculum", "currency", "excursion"]},
+    "curs": {"root": "curr/curs", "origin": "拉丁语 currere (跑)", "meaning": "跑，流动",
+             "related": ["current", "occur", "curriculum", "currency", "excursion"]},
+    "sent": {"root": "sens/sent", "origin": "拉丁语 sentire (感觉)", "meaning": "感觉，情感",
+             "related": ["sentence", "sentiment", "dissent", "consent", "resent"]},
+    "cogn": {"root": "cogn", "origin": "拉丁语 cognoscere (知道)", "meaning": "知道，认识",
+             "related": ["recognize", "cognitive", "cognition", "incognito"]},
+    "nov": {"root": "nov", "origin": "拉丁语 novus (新的)", "meaning": "新的",
+            "related": ["novel", "innovate", "renovate", "novice", "innovation"]},
+    "press": {"root": "press", "origin": "拉丁语 premere (压)", "meaning": "压，挤压",
+              "related": ["express", "impress", "depress", "compress", "suppress"]},
 }
 
 
@@ -1310,9 +1331,19 @@ def find_roots(word, root_db):
     # Try to match from longest to shortest
     for root_key in sorted(root_db.keys(), key=len, reverse=True):
         if root_key in w_lower:
-            # Skip single-letter matches that are substrings of longer matches
-            if len(root_key) == 1:
+            # Skip single-letter matches
+            if len(root_key) <= 1:
                 continue
+            # For short roots (< 4 chars), ensure they form a real morpheme
+            # by checking they're at word boundaries (start/end) or followed/preceded by a vowel
+            if len(root_key) <= 3:
+                idx = w_lower.find(root_key)
+                # Check if it's at start, end, or surrounded by vowels/consonants
+                prev_char = w_lower[idx - 1] if idx > 0 else ''
+                next_char = w_lower[idx + len(root_key)] if idx + len(root_key) < len(w_lower) else ''
+                # Skip if it's in the middle of a word surrounded by letters (not a real morpheme)
+                if prev_char and prev_char.isalpha() and next_char and next_char.isalpha():
+                    continue  # Short root embedded in middle of word - likely false positive
             info = root_db[root_key]
             found.append({
                 "root": info["root"],
@@ -1547,11 +1578,32 @@ def enrich_word(word_data, use_api=True):
     root_info = find_roots(word, ROOT_DB)
     if root_info["root"] or root_info["prefix"] or root_info["suffix"]:
         enriched["root"] = root_info
+    else:
+        enriched["root"] = None  # Clear old false matches
     
     # 4. Mnemonic
     mnemonic = get_mnemonic(word)
     if mnemonic:
         enriched["mnemonic"] = mnemonic
+    elif root_info.get("root") or root_info.get("prefix"):
+        # Auto-generate mnemonic from root info
+        parts = []
+        if root_info.get("prefix"):
+            p = root_info["prefix"]
+            parts.append(f"{p['root']}({p['meaning']})")
+        if root_info.get("root"):
+            r = root_info["root"]
+            parts.append(f"{r['root']}({r['meaning']})")
+        if root_info.get("suffix"):
+            s = root_info["suffix"]
+            parts.append(f"{s['root']}({s['meaning']})")
+        cn_part = word_data.get("meaning", "").split(" ")[-1] if " " in word_data.get("meaning", "") else ""
+        if cn_part:
+            cn_part = cn_part.lstrip("adv.v.n.adj.prep.conj.pron.") if len(cn_part) > 2 else cn_part
+        if parts and cn_part:
+            enriched["mnemonic"] = f"{' + '.join(parts)} → {cn_part}"
+        elif parts and word_data.get("meaning"):
+            enriched["mnemonic"] = f"{' + '.join(parts)} → {word_data['meaning']}"
     
     # 5. API data (synonyms, antonyms, extra examples)
     if use_api:
