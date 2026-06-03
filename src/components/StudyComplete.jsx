@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react'
 import { useParams, useLocation, useNavigate } from 'react-router-dom'
-import { getPlan, saveDailyStat, getAllPlans, getWordsByPlan, getAllDailyStats } from '../db/database.js'
+import { getPlan, getAllPlans, getWordsByPlan, getAllDailyStats } from '../db/database.js'
 import { checkAchievements } from '../db/achievements.js'
 
 export default function StudyComplete() {
@@ -18,20 +18,8 @@ export default function StudyComplete() {
       const p = await getPlan(planId)
       setPlan(p)
       
-      // 保存每日统计
-      const today = new Date().toISOString().slice(0, 10)
-      await saveDailyStat({
-        date: today,
-        planId,
-        reviewed: stats.reviewed,
-        correct: stats.correct,
-        hazy: stats.hazy,
-        forgot: stats.forgot,
-        newLearned: stats.newLearned,
-        timestamp: Date.now()
-      })
-      
-      // 计算统计数据并检测成就
+      // 每日统计已由 StudyView 的 accumulateDailyStat 实时记录
+      // 这里只检测成就
       const all = await getAllPlans()
       let totalLearned = 0, totalReviews = 0
       for (const pl of all) {
