@@ -166,7 +166,7 @@ export default function StudyView() {
             <div className="card-face card-back bg-white dark:bg-gray-800 card-shadow flex flex-col items-center justify-center p-8">
               <h2 className="text-2xl font-bold mb-2">{current.word}</h2>
               <div className="text-lg text-primary-600 dark:text-primary-400 font-medium mb-4">
-                {current.pos} {current.meaning}
+                {current.meaning}
               </div>
               {current.example && (
                 <div className="text-sm text-gray-500 dark:text-gray-400 text-center italic border-t border-gray-100 dark:border-gray-700 pt-4 mt-2">
