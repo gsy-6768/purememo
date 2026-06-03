@@ -363,7 +363,7 @@ export default function HomePage() {
                 )}
                 <div className="flex gap-2">
                   <button
-                    onClick={() => setModePicker({ planId: plan.id })}
+                    onClick={() => s.today > 0 ? setModePicker({ planId: plan.id }) : setModePicker({ planId: plan.id, limitReached: true })}
                     className="flex-1 bg-primary-600 text-white py-2.5 rounded-lg font-medium text-sm btn-press"
                   >
                     开始学习
@@ -381,46 +381,81 @@ export default function HomePage() {
         </div>
       )}
 
-      {/* 学习模式选择器 */}
-      {modePicker && (
+      {/* 学习模式选择器 / 已达上限提示 */}
+      {modePicker && (() => {
+        const isLimitReached = modePicker.limitReached
+        const pid = modePicker.planId
+        return (
         <div className="fixed inset-0 z-50 bg-black/50 flex items-end justify-center" onClick={() => setModePicker(null)}>
           <div className="bg-white dark:bg-gray-800 w-full max-w-lg rounded-t-2xl p-6 animate-slide-up" onClick={e => e.stopPropagation()}>
-            <div className="text-center mb-5">
-              <h2 className="font-bold text-lg">选择学习模式</h2>
-              <p className="text-xs text-gray-400 mt-1">今日待学习 {dueStats[modePicker.planId]?.today || 0} 个单词</p>
-            </div>
-            <div className="grid grid-cols-2 gap-3">
-              <button onClick={() => { navigate(`/study/${modePicker.planId}?mode=flip`); setModePicker(null) }}
-                className="p-4 rounded-xl bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 text-center hover:bg-primary-50 dark:hover:bg-primary-900/20 btn-press">
-                <span className="text-2xl block mb-1">🃏</span>
-                <span className="text-sm font-medium">翻卡记忆</span>
-                <span className="text-xs text-gray-400 block mt-0.5">看单词→回想释义</span>
+            {isLimitReached ? (
+              <>
+                <div className="text-center mb-5">
+                  <div className="text-4xl mb-2">🎯</div>
+                  <h2 className="font-bold text-lg">今日目标已完成！</h2>
+                  <p className="text-xs text-gray-400 mt-1">已达到每日新学单词上限，是否增加？</p>
+                </div>
+                <div className="grid grid-cols-2 gap-3 mb-4">
+                  {[20, 30, 50, 100].map(n => (
+                    <button key={n} onClick={async () => {
+                      await setSetting('dailyNewLimit', String(n))
+                      setModePicker({ planId: pid })
+                      loadData()
+                    }}
+                      className="p-3 rounded-xl bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 text-center hover:bg-primary-50 dark:hover:bg-primary-900/20 btn-press">
+                      <span className="text-lg font-bold">{n}</span>
+                      <span className="text-xs text-gray-400 block">个单词</span>
+                    </button>
+                  ))}
+                </div>
+                <div className="text-center">
+                  <button onClick={() => navigate(`/stats?plan=${pid}`)}
+                    className="text-xs text-primary-500 hover:text-primary-600 mr-4">查看统计</button>
+                  <button onClick={() => setModePicker(null)}
+                    className="text-xs text-gray-400 hover:text-gray-600">关闭</button>
+                </div>
+              </>
+            ) : (
+              <>
+              <div className="text-center mb-5">
+                <h2 className="font-bold text-lg">选择学习模式</h2>
+                <p className="text-xs text-gray-400 mt-1">今日待学习 {dueStats[pid]?.today || 0} 个单词</p>
+              </div>
+              <div className="grid grid-cols-2 gap-3">
+                <button onClick={() => { navigate(`/study/${pid}?mode=flip`); setModePicker(null) }}
+                  className="p-4 rounded-xl bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 text-center hover:bg-primary-50 dark:hover:bg-primary-900/20 btn-press">
+                  <span className="text-2xl block mb-1">🃏</span>
+                  <span className="text-sm font-medium">翻卡记忆</span>
+                  <span className="text-xs text-gray-400 block mt-0.5">看单词→回想释义</span>
+                </button>
+                <button onClick={() => { navigate(`/study/${pid}?mode=spell`); setModePicker(null) }}
+                  className="p-4 rounded-xl bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 text-center hover:bg-primary-50 dark:hover:bg-primary-900/20 btn-press">
+                  <span className="text-2xl block mb-1">✍️</span>
+                  <span className="text-sm font-medium">拼写模式</span>
+                  <span className="text-xs text-gray-400 block mt-0.5">看释义→输入单词</span>
+                </button>
+                <button onClick={() => { navigate(`/study/${pid}?mode=quiz`); setModePicker(null) }}
+                  className="p-4 rounded-xl bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 text-center hover:bg-primary-50 dark:hover:bg-primary-900/20 btn-press">
+                  <span className="text-2xl block mb-1">🎯</span>
+                  <span className="text-sm font-medium">选择题</span>
+                  <span className="text-xs text-gray-400 block mt-0.5">四选一选释义</span>
+                </button>
+                <button onClick={() => { navigate(`/study/${pid}?mode=fill`); setModePicker(null) }}
+                  className="p-4 rounded-xl bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 text-center hover:bg-primary-50 dark:hover:bg-primary-900/20 btn-press">
+                  <span className="text-2xl block mb-1">📝</span>
+                  <span className="text-sm font-medium">例句填空</span>
+                  <span className="text-xs text-gray-400 block mt-0.5">看例句→填入单词</span>
+                </button>
+              </div>
+              <button onClick={() => setModePicker(null)} className="w-full mt-4 py-2.5 text-sm text-gray-400 hover:text-gray-600 btn-press">
+                取消
               </button>
-              <button onClick={() => { navigate(`/study/${modePicker.planId}?mode=spell`); setModePicker(null) }}
-                className="p-4 rounded-xl bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 text-center hover:bg-primary-50 dark:hover:bg-primary-900/20 btn-press">
-                <span className="text-2xl block mb-1">✍️</span>
-                <span className="text-sm font-medium">拼写模式</span>
-                <span className="text-xs text-gray-400 block mt-0.5">看释义→输入单词</span>
-              </button>
-              <button onClick={() => { navigate(`/study/${modePicker.planId}?mode=quiz`); setModePicker(null) }}
-                className="p-4 rounded-xl bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 text-center hover:bg-primary-50 dark:hover:bg-primary-900/20 btn-press">
-                <span className="text-2xl block mb-1">🎯</span>
-                <span className="text-sm font-medium">选择题</span>
-                <span className="text-xs text-gray-400 block mt-0.5">四选一选释义</span>
-              </button>
-              <button onClick={() => { navigate(`/study/${modePicker.planId}?mode=fill`); setModePicker(null) }}
-                className="p-4 rounded-xl bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 text-center hover:bg-primary-50 dark:hover:bg-primary-900/20 btn-press">
-                <span className="text-2xl block mb-1">📝</span>
-                <span className="text-sm font-medium">例句填空</span>
-                <span className="text-xs text-gray-400 block mt-0.5">看例句→填入单词</span>
-              </button>
-            </div>
-            <button onClick={() => setModePicker(null)} className="w-full mt-4 py-2.5 text-sm text-gray-400 hover:text-gray-600 btn-press">
-              取消
-            </button>
+              </>
+            )}
           </div>
         </div>
-      )}
+        )
+      })()}
 
       {/* 创建学习计划 */}
       <div className="bg-white dark:bg-gray-800 rounded-xl card-shadow p-4">
