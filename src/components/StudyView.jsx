@@ -88,7 +88,6 @@ export default function StudyView() {
     item.word = newWord // 更新队列中的引用，确保后续识别为已复习
     
     const isNew = !word.nextReviewTime
-    await accumulateDailyStat(planId, rating, isNew).catch(e => console.error('stat error:', e))
     let mastered = false
     
     if (rating === 'known') {
@@ -103,6 +102,8 @@ export default function StudyView() {
     }
     
     queueRef.current.shift() // 移出当前词
+    
+    accumulateDailyStat(planId, rating, mastered && isNew).catch(e => console.error('stat error:', e))
     
     if (mastered) {
       setMasteredCount(m => m + 1)
