@@ -25,6 +25,7 @@ export default function StudyView() {
   const [loading, setLoading] = useState(true)
   const [cardKey, setCardKey] = useState(0)
   const queueRef = useRef([])
+  const statsRef = useRef({ reviewed: 0, correct: 0, hazy: 0, forgot: 0, newLearned: 0 })
 
   useEffect(() => {
     async function init() {
@@ -84,10 +85,10 @@ export default function StudyView() {
     const newWord = { ...word, ...updated }
     if (!newWord.learnedDate) newWord.learnedDate = now
     await saveWord(newWord)
-    
-    await accumulateDailyStat(planId, rating, !word.nextReviewTime).catch(e => console.error('stat error:', e))
+    item.word = newWord // 更新队列中的引用，确保后续识别为已复习
     
     const isNew = !word.nextReviewTime
+    await accumulateDailyStat(planId, rating, isNew).catch(e => console.error('stat error:', e))
     let mastered = false
     
     if (rating === 'known') {
@@ -106,14 +107,11 @@ export default function StudyView() {
     if (mastered) {
       setMasteredCount(m => m + 1)
       setCardKey(k => k + 1)
-      setSessionStats(prev => ({
-        ...prev,
-        reviewed: prev.reviewed + 1,
-        newLearned: isNew ? prev.newLearned + 1 : prev.newLearned,
-        correct: rating === 'known' ? prev.correct + 1 : prev.correct,
-        hazy: rating === 'hazy' ? prev.hazy + 1 : prev.hazy,
-        forgot: rating === 'forgot' ? prev.forgot + 1 : prev.forgot
-      }))
+      setSessionStats(prev => {
+        const next = { ...prev, reviewed: prev.reviewed + 1, newLearned: isNew ? prev.newLearned + 1 : prev.newLearned, correct: rating === 'known' ? prev.correct + 1 : prev.correct, hazy: rating === 'hazy' ? prev.hazy + 1 : prev.hazy, forgot: rating === 'forgot' ? prev.forgot + 1 : prev.forgot }
+        statsRef.current = next
+        return next
+      })
     } else {
       // === 智能间隔放置 ===
       // requiredKnown 越高 → 间隔越大
@@ -123,19 +121,17 @@ export default function StudyView() {
       const insertPos = Math.min(queueLen, Math.max(4, Math.floor(queueLen * spacingRatio)))
       queueRef.current.splice(insertPos, 0, item)
       setCardKey(k => k + 1)
-      setSessionStats(prev => ({
-        ...prev,
-        reviewed: prev.reviewed + 1,
-        correct: rating === 'known' ? prev.correct + 1 : prev.correct,
-        hazy: rating === 'hazy' ? prev.hazy + 1 : prev.hazy,
-        forgot: rating === 'forgot' ? prev.forgot + 1 : prev.forgot
-      }))
+      setSessionStats(prev => {
+        const next = { ...prev, reviewed: prev.reviewed + 1, correct: rating === 'known' ? prev.correct + 1 : prev.correct, hazy: rating === 'hazy' ? prev.hazy + 1 : prev.hazy, forgot: rating === 'forgot' ? prev.forgot + 1 : prev.forgot }
+        statsRef.current = next
+        return next
+      })
     }
     
     setFlipped(false)
     
     if (queueRef.current.length === 0) {
-      navigate(`/complete/${planId}`, { state: { stats: sessionStats } })
+      navigate(`/complete/${planId}`, { state: { stats: statsRef.current } })
     } else {
       setCurrentWord(queueRef.current[0].word)
     }
