@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react'
+import React, { useState, useEffect, useCallback, useRef } from 'react'
 import { useParams, useSearchParams, useNavigate } from 'react-router-dom'
 import SpellingMode from './SpellingMode.jsx'
 import QuizMode from './QuizMode.jsx'
@@ -15,14 +15,15 @@ export default function StudyView() {
   const weakMode = searchParams.get('weak') === '1'
   const navigate = useNavigate()
   
-  const [words, setWords] = useState([])
   const [plan, setPlan] = useState(null)
-  const [index, setIndex] = useState(0)
+  const [currentWord, setCurrentWord] = useState(null)
   const [flipped, setFlipped] = useState(false)
   const [sessionStats, setSessionStats] = useState({ reviewed: 0, correct: 0, hazy: 0, forgot: 0, newLearned: 0 })
+  const [masteredCount, setMasteredCount] = useState(0)
+  const [totalCount, setTotalCount] = useState(0)
   const [autoSpeak, setAutoSpeak] = useState(true)
   const [loading, setLoading] = useState(true)
-  const [totalCount, setTotalCount] = useState(0)
+  const queueRef = useRef([])
 
   useEffect(() => {
     async function init() {
@@ -58,8 +59,10 @@ export default function StudyView() {
       
       const finalList = [...limitedDue, ...availableNew]
       
-      setWords(finalList)
+      queueRef.current = finalList.map(w => ({ word: w, requiredKnown: 1 }))
+      setCurrentWord(queueRef.current[0]?.word || null)
       setTotalCount(finalList.length)
+      setMasteredCount(0)
       setLoading(false)
       
       if (finalList.length === 0) {
@@ -69,42 +72,65 @@ export default function StudyView() {
     init()
   }, [planId])
 
-  const current = words[index]
-
   const handleFeedback = useCallback(async (rating) => {
-    if (!current) return
+    const item = queueRef.current[0]
+    if (!item) return
+    const { word } = item
     
-    const updated = calculateNextReview(current, rating)
+    const updated = calculateNextReview(word, rating)
     const now = Date.now()
     
-    // 更新学习状态
-    const newWord = { ...current, ...updated }
+    const newWord = { ...word, ...updated }
     if (!newWord.learnedDate) newWord.learnedDate = now
-    
     await saveWord(newWord)
     
-    // 实时更新每日统计（单词级，中途退出也不丢失）
-    await accumulateDailyStat(planId, rating, !current.nextReviewTime).catch(e => console.error('stat error:', e))
+    await accumulateDailyStat(planId, rating, !word.nextReviewTime).catch(e => console.error('stat error:', e))
     
-    // 更新统计
-    setSessionStats(prev => {
-      const next = { ...prev, reviewed: prev.reviewed + 1 }
-      if (!current.nextReviewTime) next.newLearned = prev.newLearned + 1
-      if (rating === 'known') next.correct = prev.correct + 1
-      if (rating === 'hazy') next.hazy = prev.hazy + 1
-      if (rating === 'forgot') next.forgot = prev.forgot + 1
-      return next
-    })
+    const isNew = !word.nextReviewTime
+    let mastered = false
+    
+    if (rating === 'known') {
+      item.requiredKnown -= 1
+      if (item.requiredKnown <= 0) {
+        mastered = true
+      }
+    } else if (rating === 'hazy') {
+      item.requiredKnown = 2
+    } else { // forgot
+      item.requiredKnown = 3
+    }
+    
+    queueRef.current.shift() // 移出当前词
+    
+    if (mastered) {
+      setMasteredCount(m => m + 1)
+      setSessionStats(prev => ({
+        ...prev,
+        reviewed: prev.reviewed + 1,
+        newLearned: isNew ? prev.newLearned + 1 : prev.newLearned,
+        correct: rating === 'known' ? prev.correct + 1 : prev.correct,
+        hazy: rating === 'hazy' ? prev.hazy + 1 : prev.hazy,
+        forgot: rating === 'forgot' ? prev.forgot + 1 : prev.forgot
+      }))
+    } else {
+      queueRef.current.push(item) // 放回队尾继续学
+      setSessionStats(prev => ({
+        ...prev,
+        reviewed: prev.reviewed + 1,
+        correct: rating === 'known' ? prev.correct + 1 : prev.correct,
+        hazy: rating === 'hazy' ? prev.hazy + 1 : prev.hazy,
+        forgot: rating === 'forgot' ? prev.forgot + 1 : prev.forgot
+      }))
+    }
     
     setFlipped(false)
     
-    if (index + 1 >= words.length) {
-      // 学习完成，跳转到完成页
-      navigate(`/complete/${planId}`, { state: { stats: { ...sessionStats, reviewed: sessionStats.reviewed } } })
+    if (queueRef.current.length === 0) {
+      navigate(`/complete/${planId}`, { state: { stats: sessionStats } })
     } else {
-      setIndex(i => i + 1)
+      setCurrentWord(queueRef.current[0].word)
     }
-  }, [current, index, words, planId, navigate, sessionStats])
+  }, [planId, navigate])
 
   // 键盘快捷键（仅翻卡模式）
   useEffect(() => {
@@ -112,11 +138,9 @@ export default function StudyView() {
     const handler = (e) => {
       if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') return
       if (e.key === ' ' || e.key === 'Enter') { e.preventDefault(); setFlipped(f => !f) }
-      if (flipped) {
-        if (e.key === '1') handleFeedback('forgot')
-        if (e.key === '2') handleFeedback('hazy')
-        if (e.key === '3') handleFeedback('known')
-      }
+      if (flipped && e.key === '1') handleFeedback('forgot')
+      if (flipped && e.key === '2') handleFeedback('hazy')
+      if (flipped && e.key === '3') handleFeedback('known')
     }
     window.addEventListener('keydown', handler)
     return () => window.removeEventListener('keydown', handler)
@@ -124,10 +148,10 @@ export default function StudyView() {
 
   // 自动发音
   useEffect(() => {
-    if (current && autoSpeak && !flipped) {
-      speakWord(current.word)
+    if (currentWord && autoSpeak && !flipped) {
+      speakWord(currentWord.word)
     }
-  }, [current, autoSpeak, flipped])
+  }, [currentWord, autoSpeak, flipped])
 
   if (loading) return (
     <div className="flex items-center justify-center min-h-screen">
@@ -137,7 +161,7 @@ export default function StudyView() {
 
   if (!current) return null
 
-  const progress = totalCount > 0 ? (index / totalCount) * 100 : 0
+  const progress = totalCount > 0 ? (masteredCount / totalCount) * 100 : 0
 
   return (
     <div className="min-h-screen flex flex-col px-4 py-6 max-w-lg mx-auto">
@@ -145,7 +169,7 @@ export default function StudyView() {
       <div className="flex items-center justify-between mb-4">
         <button onClick={() => navigate('/')} className="text-gray-500 hover:text-gray-700 dark:hover:text-gray-300 text-lg">✕</button>
         <span className="text-sm text-gray-400">{plan?.name}</span>
-        <span className="text-sm text-gray-500">{index + 1}/{totalCount}</span>
+        <span className="text-sm text-gray-500">{masteredCount}/{totalCount}</span>
       </div>
 
       {/* 进度条 */}

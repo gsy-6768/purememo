@@ -398,7 +398,7 @@ export default function HomePage() {
                 <div className="grid grid-cols-2 gap-3 mb-4">
                   {[20, 30, 50, 100].map(add => {
                     const total = (modePicker.currentLimit || 20) + add
-                      return (
+                    return (
                       <button key={add} onClick={async () => {
                         await setSetting('dailyNewLimit', String(total))
                         setModePicker({ planId: pid })
@@ -408,9 +408,8 @@ export default function HomePage() {
                         <span className="text-lg font-bold">+{add}</span>
                         <span className="text-xs text-gray-400 block">共 {total} 个</span>
                       </button>
-                      )
-                    })
-                  })()}
+                    )
+                  })}
                 </div>
                 <div className="text-center">
                   <button onClick={() => navigate(`/stats?plan=${pid}`)}
