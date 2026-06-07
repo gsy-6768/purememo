@@ -68,12 +68,12 @@ export default function StudyComplete() {
 
       <div className="w-full bg-white dark:bg-gray-800 rounded-xl card-shadow p-6 space-y-4">
         <div className="flex justify-between items-center">
-          <span className="text-gray-500">今日新学</span>
-          <span className="font-semibold text-lg">{stats.newLearned}</span>
+          <span className="text-gray-500">今日学习</span>
+          <span className="font-semibold text-lg">{stats.reviewed}</span>
         </div>
         <div className="flex justify-between items-center">
-          <span className="text-gray-500">今日复习</span>
-          <span className="font-semibold text-lg">{stats.reviewed - stats.newLearned}</span>
+          <span className="text-gray-500">新学掌握</span>
+          <span className="font-semibold text-lg">{stats.newLearned}</span>
         </div>
         <div className="border-t border-gray-100 dark:border-gray-700 pt-3">
           <div className="flex justify-between items-center">

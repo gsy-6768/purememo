@@ -103,7 +103,7 @@ export default function StudyView() {
     
     queueRef.current.shift() // 移出当前词
     
-    accumulateDailyStat(planId, rating, mastered && isNew).catch(e => console.error('stat error:', e))
+    accumulateDailyStat(planId, rating, isNew).catch(e => console.error('stat error:', e))
     
     if (mastered) {
       setMasteredCount(m => m + 1)
