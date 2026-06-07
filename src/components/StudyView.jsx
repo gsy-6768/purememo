@@ -113,7 +113,13 @@ export default function StudyView() {
         forgot: rating === 'forgot' ? prev.forgot + 1 : prev.forgot
       }))
     } else {
-      queueRef.current.push(item) // 放回队尾继续学
+      // === 智能间隔放置 ===
+      // requiredKnown 越高 → 间隔越大
+      // 剩余词数越多 → 前移（保证足够间隔）
+      const spacingRatio = item.requiredKnown >= 3 ? 0.50 : item.requiredKnown >= 2 ? 0.40 : 0.25
+      const queueLen = queueRef.current.length
+      const insertPos = Math.min(queueLen, Math.max(4, Math.floor(queueLen * spacingRatio)))
+      queueRef.current.splice(insertPos, 0, item)
       setSessionStats(prev => ({
         ...prev,
         reviewed: prev.reviewed + 1,
