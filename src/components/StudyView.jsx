@@ -189,8 +189,8 @@ export default function StudyView() {
         <>
       {/* 翻卡模式 */}
       <div className="flex-1 flex items-center justify-center" onClick={() => !flipped && setFlipped(true)}>
-        <div key={cardKey} className="w-full max-w-sm aspect-[3/4] perspective cursor-pointer">
-          <div className={`card-inner ${flipped ? 'flipped' : ''}`}>
+        <div key={cardKey} className={`w-full max-w-sm perspective cursor-pointer ${flipped ? 'flex-1' : 'aspect-[3/4]'}`}>
+          <div className={`card-inner h-full ${flipped ? 'flipped' : ''}`}>
             {/* 正面：单词 */}
             <div className="card-face bg-white dark:bg-gray-800 card-shadow flex flex-col items-center justify-center p-8">
               <h2 className="text-3xl font-bold mb-3 text-center">{current.word}</h2>
@@ -201,8 +201,8 @@ export default function StudyView() {
               <p className="text-xs text-gray-300 mt-6">点击卡片或按空格键翻转</p>
             </div>
 
-            {/* 背面：释义 + 丰富内容 */}
-            <div className="card-face card-back bg-white dark:bg-gray-800 card-shadow flex flex-col p-6 overflow-y-auto">
+            {/* 背面：释义 + 丰富内容 — 展开占满空间 */}
+            <div className="card-face card-back bg-white dark:bg-gray-800 card-shadow flex flex-col p-6 overflow-y-auto min-h-[50vh]">
               {/* 单词和释义 */}
               <div className="text-center mb-3 shrink-0">
                 <div className="flex items-center justify-center gap-2 mb-1">
