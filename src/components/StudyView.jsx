@@ -165,6 +165,7 @@ export default function StudyView() {
     </div>
   )
 
+  const current = currentWord
   if (!current) return null
 
   const progress = totalCount > 0 ? (masteredCount / totalCount) * 100 : 0
@@ -360,7 +361,7 @@ export default function StudyView() {
       ) : mode === 'spell' ? (
         <SpellingMode word={current} onComplete={handleFeedback} />
       ) : mode === 'quiz' ? (
-        <QuizMode word={current} allWords={words} onComplete={handleFeedback} />
+        <QuizMode word={current} allWords={queueRef.current.map(i => i.word)} onComplete={handleFeedback} />
       ) : mode === 'fill' ? (
         <FillBlankMode word={current} onComplete={handleFeedback} />
       ) : null}
