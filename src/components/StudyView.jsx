@@ -185,7 +185,7 @@ export default function StudyView() {
       {mode === 'flip' ? (
         <>
       {/* 翻卡模式 */}
-      <div className="flex-1 flex items-center justify-center" onClick={() => {
+      <div className={`flex-1 relative ${pendingAdvanceRef.current ? 'cursor-pointer' : ''}`} onClick={() => {
         if (pendingAdvanceRef.current) {
           pendingAdvanceRef.current = false
           setFlipped(false)
@@ -194,11 +194,11 @@ export default function StudyView() {
           } else {
             setCurrentWord(queueRef.current[0].word)
           }
-        } else if (!flipped) {
-          setFlipped(true)
         }
       }}>
-        <div key={cardKey} className="w-full max-w-sm aspect-[3/4] perspective cursor-pointer">
+        <div className="h-full flex items-center justify-center">
+        <div className="flex flex-col items-center gap-3">
+          <div key={cardKey} className="w-full max-w-sm aspect-[3/4] perspective cursor-pointer" onClick={() => !flipped && !pendingAdvanceRef.current && setFlipped(true)}>
           <div className={`card-inner ${flipped ? 'flipped' : ''}`}>
             {/* 正面：单词 */}
             <div className="card-face bg-white dark:bg-gray-800 card-shadow flex flex-col items-center justify-center p-8">
@@ -343,7 +343,6 @@ export default function StudyView() {
             </div>
           </div>
         </div>
-      </div>
 
       {/* 反馈按钮 — 翻转前评价（墨墨逻辑：看到词就自我评估） */}
       <div className={`transition-opacity duration-300 ${!flipped ? 'opacity-100' : 'opacity-0 pointer-events-none'}`}>
@@ -365,7 +364,17 @@ export default function StudyView() {
           </button>
         </div>
       </div>
-      <div className="text-center text-xs text-gray-400 mt-2">点击卡片空白区翻转</div>
+        </div>
+      </div>
+      </div>
+      {!pendingAdvanceRef.current && (
+        <div className="text-center text-xs text-gray-400 mt-2">点击卡片空白区翻转</div>
+      )}
+      {pendingAdvanceRef.current && (
+        <div className="fixed inset-0 flex items-end justify-center pb-16 pointer-events-none">
+          <div className="text-xs text-gray-400 bg-black/40 text-white px-4 py-2 rounded-full">点击任意位置继续 →</div>
+        </div>
+      )}
         </>
       ) : mode === 'spell' ? (
         <SpellingMode word={current} onComplete={handleFeedback} />
