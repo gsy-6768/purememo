@@ -144,9 +144,9 @@ export default function StudyView() {
     const handler = (e) => {
       if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') return
       if (e.key === ' ' || e.key === 'Enter') { e.preventDefault(); setFlipped(f => !f) }
-      if (flipped && e.key === '1') handleFeedback('forgot')
-      if (flipped && e.key === '2') handleFeedback('hazy')
-      if (flipped && e.key === '3') handleFeedback('known')
+      if (!flipped && e.key === '1') handleFeedback('forgot')
+      if (!flipped && e.key === '2') handleFeedback('hazy')
+      if (!flipped && e.key === '3') handleFeedback('known')
     }
     window.addEventListener('keydown', handler)
     return () => window.removeEventListener('keydown', handler)
@@ -336,8 +336,8 @@ export default function StudyView() {
         </div>
       </div>
 
-      {/* 反馈按钮 */}
-      <div className={`transition-opacity duration-300 ${flipped ? 'opacity-100' : 'opacity-0 pointer-events-none'}`}>
+      {/* 反馈按钮 — 翻转前评价（墨墨逻辑：看到词就自我评估） */}
+      <div className={`transition-opacity duration-300 ${!flipped ? 'opacity-100' : 'opacity-0 pointer-events-none'}`}>
         <div className="flex gap-3 py-4">
           <button onClick={() => handleFeedback('forgot')} className="flex-1 py-3 bg-danger-500 text-white rounded-xl font-medium text-sm btn-press active:bg-danger-600 shadow-lg shadow-danger-500/30">
             <div className="text-lg">😅</div>
