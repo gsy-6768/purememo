@@ -26,6 +26,7 @@ export default function StudyView() {
   const [cardKey, setCardKey] = useState(0)
   const queueRef = useRef([])
   const statsRef = useRef({ reviewed: 0, correct: 0, hazy: 0, forgot: 0, newLearned: 0 })
+  const pendingAdvanceRef = useRef(false)
 
   useEffect(() => {
     async function init() {
@@ -129,13 +130,9 @@ export default function StudyView() {
       })
     }
     
-    setFlipped(false)
-    
-    if (queueRef.current.length === 0) {
-      navigate(`/complete/${planId}`, { state: { stats: statsRef.current } })
-    } else {
-      setCurrentWord(queueRef.current[0].word)
-    }
+    // 翻转卡片展示注释，等待用户点击空白区继续
+    pendingAdvanceRef.current = true
+    setFlipped(true)
   }, [planId, navigate])
 
   // 键盘快捷键（仅翻卡模式）
@@ -188,9 +185,21 @@ export default function StudyView() {
       {mode === 'flip' ? (
         <>
       {/* 翻卡模式 */}
-      <div className="flex-1 flex items-center justify-center" onClick={() => !flipped && setFlipped(true)}>
-        <div key={cardKey} className={`w-full max-w-sm perspective cursor-pointer ${flipped ? 'flex-1' : 'aspect-[3/4]'}`}>
-          <div className={`card-inner h-full ${flipped ? 'flipped' : ''}`}>
+      <div className="flex-1 flex items-center justify-center" onClick={() => {
+        if (pendingAdvanceRef.current) {
+          pendingAdvanceRef.current = false
+          setFlipped(false)
+          if (queueRef.current.length === 0) {
+            navigate(`/complete/${planId}`, { state: { stats: statsRef.current } })
+          } else {
+            setCurrentWord(queueRef.current[0].word)
+          }
+        } else if (!flipped) {
+          setFlipped(true)
+        }
+      }}>
+        <div key={cardKey} className="w-full max-w-sm aspect-[3/4] perspective cursor-pointer">
+          <div className={`card-inner ${flipped ? 'flipped' : ''}`}>
             {/* 正面：单词 */}
             <div className="card-face bg-white dark:bg-gray-800 card-shadow flex flex-col items-center justify-center p-8">
               <h2 className="text-3xl font-bold mb-3 text-center">{current.word}</h2>
