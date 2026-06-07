@@ -23,6 +23,7 @@ export default function StudyView() {
   const [totalCount, setTotalCount] = useState(0)
   const [autoSpeak, setAutoSpeak] = useState(true)
   const [loading, setLoading] = useState(true)
+  const [cardKey, setCardKey] = useState(0)
   const queueRef = useRef([])
 
   useEffect(() => {
@@ -104,6 +105,7 @@ export default function StudyView() {
     
     if (mastered) {
       setMasteredCount(m => m + 1)
+      setCardKey(k => k + 1)
       setSessionStats(prev => ({
         ...prev,
         reviewed: prev.reviewed + 1,
@@ -120,6 +122,7 @@ export default function StudyView() {
       const queueLen = queueRef.current.length
       const insertPos = Math.min(queueLen, Math.max(4, Math.floor(queueLen * spacingRatio)))
       queueRef.current.splice(insertPos, 0, item)
+      setCardKey(k => k + 1)
       setSessionStats(prev => ({
         ...prev,
         reviewed: prev.reviewed + 1,
@@ -189,7 +192,7 @@ export default function StudyView() {
         <>
       {/* 翻卡模式 */}
       <div className="flex-1 flex items-center justify-center" onClick={() => !flipped && setFlipped(true)}>
-        <div key={index} className="w-full max-w-sm aspect-[3/4] perspective cursor-pointer">
+        <div key={cardKey} className="w-full max-w-sm aspect-[3/4] perspective cursor-pointer">
           <div className={`card-inner ${flipped ? 'flipped' : ''}`}>
             {/* 正面：单词 */}
             <div className="card-face bg-white dark:bg-gray-800 card-shadow flex flex-col items-center justify-center p-8">
